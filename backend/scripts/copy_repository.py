@@ -4,12 +4,12 @@ import requests
 from dotenv import load_dotenv
 from log_utils import setup_logger
 
-logger = setup_logger('move_repository')
+logger = setup_logger('copy_repository')
 
-def move_repository(source_url, target_url):
+def copy_repository(source_url, target_url, env_path='../../.env'):
     logger.info(f"Starting repository move process from {source_url} to {target_url}")
-    load_dotenv()  # This will load from the default .env file
-    
+    load_dotenv(env_path)
+
     GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
     if not GITHUB_TOKEN:
         logger.error('GITHUB_TOKEN not found in the environment variables.')
@@ -22,9 +22,10 @@ def move_repository(source_url, target_url):
 
     # Extract owner and repo name from the URLs
     _, _, _, source_owner, source_repo = source_url.rstrip('/').split('/')
-    target_parts = target_url.rstrip('/').split('/')
-    target_owner = target_parts[3]
-    target_repo = target_parts[4] if len(target_parts) > 4 else source_repo
+    _, _, _, target_owner = target_url.rstrip('/').split('/')
+
+    # Use the source repo name for the target
+    target_repo = source_repo
 
     logger.info(f"Moving repository: {source_owner}/{source_repo} to {target_owner}/{target_repo}")
 
@@ -56,21 +57,12 @@ def move_repository(source_url, target_url):
     # Clone and push repository
     clone_url = f'https://{GITHUB_TOKEN}@github.com/{source_owner}/{source_repo}.git'
     push_url = new_repo_info['clone_url'].replace('https://', f'https://{GITHUB_TOKEN}@')
-    
+
     os.system(f'git clone --mirror {clone_url} temp_repo')
     os.chdir('temp_repo')
     os.system(f'git push --mirror {push_url}')
     os.chdir('..')
     os.system('rm -rf temp_repo')
-
-    # Delete the source repository
-    delete_url = f'https://api.github.com/repos/{source_owner}/{source_repo}'
-    logger.info(f"Deleting source repository: {source_owner}/{source_repo}")
-    response = requests.delete(delete_url, headers=headers)
-    
-    if response.status_code != 204:
-        logger.error(f"Failed to delete source repository. Status code: {response.status_code}")
-        return {'success': False, 'message': f'Repository was copied but not deleted from source. Please delete manually. New URL: {new_repo_info["html_url"]}'}
 
     logger.info(f"Repository successfully moved from {source_url} to {new_repo_info['html_url']}")
     return {'success': True, 'message': f"Repository moved successfully. New URL: {new_repo_info['html_url']}"}
@@ -78,13 +70,13 @@ def move_repository(source_url, target_url):
 if __name__ == '__main__':
     if len(sys.argv) != 3:
         logger.error("Incorrect number of arguments provided.")
-        print("Usage: python move_repository.py <source_url> <target_url>")
+        print("Usage: python copy_repository.py <source_url> <target_url>")
         sys.exit(1)
 
     source_url = sys.argv[1]
     target_url = sys.argv[2]
-    
+
     logger.info(f"Script started with source_url: {source_url}, target_url: {target_url}")
-    result = move_repository(source_url, target_url)
+    result = copy_repository(source_url, target_url)
     logger.info(f"Script finished with result: {result}")
     print(result)

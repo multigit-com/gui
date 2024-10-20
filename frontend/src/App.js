@@ -14,7 +14,7 @@ function App() {
         setCommands(data);
         const initialInputs = {};
         data.forEach(command => {
-          initialInputs[command] = command === 'move_repository' ? ['', ''] : '';
+          initialInputs[command] = command === 'move_repository' ? ['', ''] : [''];
         });
         setInputs(initialInputs);
       })
@@ -37,9 +37,7 @@ function App() {
   const handleInputChange = (command, value, index = 0) => {
     setInputs(prevInputs => ({
       ...prevInputs,
-      [command]: Array.isArray(prevInputs[command])
-        ? prevInputs[command].map((v, i) => i === index ? value : v)
-        : value
+      [command]: prevInputs[command].map((v, i) => i === index ? value : v)
     }));
   };
 
@@ -47,7 +45,7 @@ function App() {
     setError(null);
     const promises = commands.map(command => {
       const input = inputs[command];
-      if (input && (typeof input === 'string' ? input.trim() !== '' : input.some(v => v.trim() !== ''))) {
+      if (input && input.some(v => v.trim() !== '')) {
         return fetch('http://localhost:5000/api/execute', {
           method: 'POST',
           headers: {
@@ -55,7 +53,7 @@ function App() {
           },
           body: JSON.stringify({ 
             command, 
-            input: Array.isArray(input) ? input : [input] 
+            input: input
           }),
         })
         .then(response => response.json())
@@ -95,29 +93,15 @@ function App() {
             <tr key={command}>
               <td>{command}</td>
               <td>
-                {Array.isArray(inputs[command]) ? (
-                  <>
-                    <input
-                      type="text"
-                      value={inputs[command][0] || ''}
-                      onChange={(e) => handleInputChange(command, e.target.value, 0)}
-                      placeholder="Source URL"
-                    />
-                    <input
-                      type="text"
-                      value={inputs[command][1] || ''}
-                      onChange={(e) => handleInputChange(command, e.target.value, 1)}
-                      placeholder="Target URL"
-                    />
-                  </>
-                ) : (
+                {inputs[command] && inputs[command].map((input, index) => (
                   <input
+                    key={index}
                     type="text"
-                    value={inputs[command] || ''}
-                    onChange={(e) => handleInputChange(command, e.target.value)}
-                    placeholder="Enter input"
+                    value={input}
+                    onChange={(e) => handleInputChange(command, e.target.value, index)}
+                    placeholder={`Input ${index + 1}`}
                   />
-                )}
+                ))}
               </td>
               <td>
                 {results[command] && (

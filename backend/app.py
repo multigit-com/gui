@@ -21,7 +21,7 @@ def execute_command():
         if not os.path.exists(script_path):
             return jsonify({'error': 'Unknown command'}), 400
         
-        # Convert input_data to a list if it's not already
+        # Ensure input_data is a list
         if not isinstance(input_data, list):
             input_data = [input_data]
         
