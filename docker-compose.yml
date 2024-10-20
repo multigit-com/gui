@@ -25,3 +25,10 @@ services:
       - "3001:3001"
     volumes:
       - ./backend/scripts:/app/scripts
+
+  token-updater:
+    build: github-token
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./.env:/app/.env

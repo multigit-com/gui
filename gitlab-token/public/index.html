@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update GitLab Token</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #FC6D26;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #E24329;
+        }
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .info {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .generate-token {
+            margin-top: 20px;
+        }
+        .generate-token a {
+            background-color: #FC6D26;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .generate-token a:hover {
+            background-color: #E24329;
+        }
+    </style>
+</head>
+<body>
+    <h1>Update GitLab Token</h1>
+    
+    <div class="generate-token">
+        <h2>Generate a new token</h2>
+        <p>Click the button below to generate a new GitLab token with the required permissions:</p>
+        <a href="https://gitlab.com/-/profile/personal_access_tokens?name=Repository%20Manager&scopes=api,read_user,read_api,read_repository,write_repository" target="_blank">Generate GitLab Token</a>
+    </div>
+    
+    <h2>Enter your token</h2>
+    <form id="tokenForm">
+        <input type="text" id="tokenInput" placeholder="Enter your GitLab token" required>
+        <button type="submit">Update Token</button>
+    </form>
+    <p id="message"></p>
+    
+    <div class="info">
+        <p>After updating your token, you can return to the main application:</p>
+        <a href="http://localhost:3000" target="_blank">Open Repository Manager</a>
+    </div>
+
+    <script>
+        document.getElementById('tokenForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = document.getElementById('tokenInput').value;
+            const response = await fetch('/update-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token }),
+            });
+            const result = await response.json();
+            document.getElementById('message').textContent = result.message || result.error;
+        });
+    </script>
+</body>
+</html>

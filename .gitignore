@@ -1,5 +1,7 @@
 .env
 .idea
+venv
+backend/logs/*.log
 package-lock.json
 # Logs
 logs
