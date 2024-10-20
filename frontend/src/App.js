@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 function App() {
   const [commands, setCommands] = useState([]);
-  const [selectedCommand, setSelectedCommand] = useState('');
-  const [input, setInput] = useState('');
-  const [result, setResult] = useState(null);
+  const [inputs, setInputs] = useState({});
+  const [results, setResults] = useState({});
   const [auditLog, setAuditLog] = useState([]);
   const [error, setError] = useState(null);
 
@@ -13,9 +12,11 @@ function App() {
       .then(response => response.json())
       .then(data => {
         setCommands(data);
-        if (data.length > 0) {
-          setSelectedCommand(data[0]);
-        }
+        const initialInputs = {};
+        data.forEach(command => {
+          initialInputs[command] = command === 'move_repository' ? ['', ''] : '';
+        });
+        setInputs(initialInputs);
       })
       .catch(err => setError('Failed to fetch commands: ' + err.message));
 
@@ -33,23 +34,47 @@ function App() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleInputChange = (command, value, index = 0) => {
+    setInputs(prevInputs => ({
+      ...prevInputs,
+      [command]: Array.isArray(prevInputs[command])
+        ? prevInputs[command].map((v, i) => i === index ? value : v)
+        : value
+    }));
+  };
+
+  const handleSubmit = async () => {
     setError(null);
+    const promises = commands.map(command => {
+      const input = inputs[command];
+      if (input && (typeof input === 'string' ? input.trim() !== '' : input.some(v => v.trim() !== ''))) {
+        return fetch('http://localhost:5000/api/execute', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            command, 
+            input: Array.isArray(input) ? input : [input] 
+          }),
+        })
+        .then(response => response.json())
+        .then(data => ({ command, data }))
+        .catch(err => ({ command, error: err.message }));
+      }
+      return null;
+    }).filter(Boolean);
+
     try {
-      const response = await fetch('http://localhost:5000/api/execute', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ command: selectedCommand, input }),
+      const results = await Promise.all(promises);
+      const newResults = {};
+      results.forEach(({ command, data, error }) => {
+        newResults[command] = error || data;
       });
-      if (!response.ok) throw new Error('Network response was not ok');
-      const data = await response.json();
-      setResult(data);
+      setResults(newResults);
       fetchAuditLog();
     } catch (err) {
-      setError('Failed to execute command: ' + err.message);
+      setError('Failed to execute commands: ' + err.message);
     }
   };
 
@@ -57,35 +82,53 @@ function App() {
     <div>
       <h1>GitHub Repository Manager</h1>
       {error && <p style={{color: 'red'}}>{error}</p>}
-      <p>
-        Need to update your GitHub token? {' '}
-        <a href="http://localhost:3002" target="_blank" rel="noopener noreferrer">
-          Click here to open the Token Updater
-        </a>
-      </p>
-      <form onSubmit={handleSubmit}>
-        <select
-          value={selectedCommand}
-          onChange={(e) => setSelectedCommand(e.target.value)}
-        >
+      <table>
+        <thead>
+          <tr>
+            <th>Command</th>
+            <th>Input</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
           {commands.map(command => (
-            <option key={command} value={command}>{command}</option>
+            <tr key={command}>
+              <td>{command}</td>
+              <td>
+                {Array.isArray(inputs[command]) ? (
+                  <>
+                    <input
+                      type="text"
+                      value={inputs[command][0] || ''}
+                      onChange={(e) => handleInputChange(command, e.target.value, 0)}
+                      placeholder="Source URL"
+                    />
+                    <input
+                      type="text"
+                      value={inputs[command][1] || ''}
+                      onChange={(e) => handleInputChange(command, e.target.value, 1)}
+                      placeholder="Target URL"
+                    />
+                  </>
+                ) : (
+                  <input
+                    type="text"
+                    value={inputs[command] || ''}
+                    onChange={(e) => handleInputChange(command, e.target.value)}
+                    placeholder="Enter input"
+                  />
+                )}
+              </td>
+              <td>
+                {results[command] && (
+                  <pre>{JSON.stringify(results[command], null, 2)}</pre>
+                )}
+              </td>
+            </tr>
           ))}
-        </select>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Enter input"
-        />
-        <button type="submit">Execute</button>
-      </form>
-      {result && (
-        <div>
-          <h2>Result:</h2>
-          <pre>{JSON.stringify(result, null, 2)}</pre>
-        </div>
-      )}
+        </tbody>
+      </table>
+      <button onClick={handleSubmit}>Execute All</button>
       <div>
         <h2>Audit Log:</h2>
         <ul>

@@ -18,6 +18,8 @@ services:
       - "5000:5000"
     env_file:
       - .env
+    volumes:
+      - ./.env:/app/.env
 
   api:
     build: ./api
@@ -26,9 +28,16 @@ services:
     volumes:
       - ./backend/scripts:/app/scripts
 
-  token-updater:
+  github-token-updater:
     build: github-token
     ports:
       - "3002:3002"
+    volumes:
+      - ./.env:/app/.env
+
+  gitlab-token-updater:
+    build: ./gitlab-token
+    ports:
+      - "3003:3003"
     volumes:
       - ./.env:/app/.env

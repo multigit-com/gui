@@ -21,10 +21,14 @@ def execute_command():
         if not os.path.exists(script_path):
             return jsonify({'error': 'Unknown command'}), 400
         
-        result = subprocess.run(['python', script_path, input_data], capture_output=True, text=True)
+        # Convert input_data to a list if it's not already
+        if not isinstance(input_data, list):
+            input_data = [input_data]
+        
+        result = subprocess.run(['python', script_path] + input_data, capture_output=True, text=True)
         
         # Log the action
-        subprocess.run(['python', os.path.join(SCRIPTS_DIR, 'audit_log.py'), command, input_data])
+        subprocess.run(['python', os.path.join(SCRIPTS_DIR, 'audit_log.py'), command] + input_data)
         
         if result.returncode == 0:
             return jsonify({'success': True, 'output': result.stdout})
