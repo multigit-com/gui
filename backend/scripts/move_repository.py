@@ -22,7 +22,12 @@ def move_repository(source_url, target_url, env_path='../../.env'):
 
     # Extract owner and repo name from the URLs
     _, _, _, source_owner, source_repo = source_url.rstrip('/').split('/')
-    _, _, _, target_owner, _ = target_url.rstrip('/').split('/')
+    _, _, _, target_owner = target_url.rstrip('/').split('/')
+
+    # Use the source repo name for the target
+    target_repo = source_repo
+
+    logger.info(f"Moving repository: {source_owner}/{source_repo} to {target_owner}/{target_repo}")
 
     # Get repository information
     get_repo_url = f'https://api.github.com/repos/{source_owner}/{source_repo}'
@@ -35,13 +40,13 @@ def move_repository(source_url, target_url, env_path='../../.env'):
     repo_info = response.json()
 
     # Create new repository
-    create_url = f'https://api.github.com/user/repos'
+    create_url = f'https://api.github.com/orgs/{target_owner}/repos'
     create_data = {
-        "name": source_repo,
+        "name": target_repo,
         "description": repo_info.get('description', ''),
         "private": repo_info['private']
     }
-    logger.info(f"Creating new repository: {target_owner}/{source_repo}")
+    logger.info(f"Creating new repository: {target_owner}/{target_repo}")
     response = requests.post(create_url, headers=headers, json=create_data)
     if response.status_code != 201:
         logger.error(f"Failed to create new repository. Status code: {response.status_code}")
