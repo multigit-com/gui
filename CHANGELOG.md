@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented retry mechanism with exponential backoff for GitHub API requests
 - Added error handling for request timeouts and other network issues
 - Improved logging for README fetching process
+- Function to remove repository from database after successful removal from GitHub
 
 ### Changed
 - Updated organization fetching process to be more resilient to failures
@@ -19,11 +20,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced README fetching to include retry logic
 - Updated react-scripts to version 5.0.1 to resolve webpack-dev-server deprecation warnings
 - Modified frontend Dockerfile to ensure it uses the latest build
+- Updated remove repository process to also remove the repository from the local database
 
 ### Fixed
 - Improved handling of connection errors when fetching README content
 - Enhanced error reporting for failed API requests
 - Resolved deprecation warnings related to webpack-dev-server configuration
+
+## [0.11.0] - 2024-10-28
+
+### Added
+- Function to remove repository from database after successful removal from GitHub
+- Improved error handling and logging for repository removal process
+- Enhanced caching mechanism for organizations and repositories
+
+### Changed
+- Updated remove repository process to also remove the repository from the local database
+- Modified database schema to support more efficient querying and caching
+- Refactored GitHub API interaction to use a centralized utility module
+
+### Fixed
+- Issue with repository data remaining in local cache after removal from GitHub
+- Improved error handling for network timeouts and API rate limiting
 
 ## [0.10.0] - 2024-10-27
 

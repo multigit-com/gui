@@ -77,3 +77,10 @@ def get_cached_repositories(org):
     repos = [{'id': row[0], 'name': row[1], 'org': row[2], 'html_url': row[3], 'description': row[4], 'last_updated': row[5]} for row in c.fetchall()]
     conn.close()
     return repos
+
+def remove_repository_from_db(org, repo_name):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute(f'DELETE FROM {REPOSITORIES_TABLE} WHERE org = ? AND name = ?', (org, repo_name))
+    conn.commit()
+    conn.close()

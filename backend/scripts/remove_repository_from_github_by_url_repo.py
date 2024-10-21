@@ -2,6 +2,7 @@ import os
 import sys
 import json
 from github import Github
+from utils.database import remove_repository_from_db
 
 def remove_repository_from_github_by_url_repo(repo_url, source_org_id):
     github_token = os.getenv('GITHUB_TOKEN')
@@ -18,10 +19,13 @@ def remove_repository_from_github_by_url_repo(repo_url, source_org_id):
         # Get the repository
         repo = g.get_repo(f"{source_org_id}/{repo_name}")
 
-        # Delete the repository
+        # Delete the repository from GitHub
         repo.delete()
 
-        return {"success": True, "message": f"Repository {repo_url} removed from {source_org_id}"}
+        # Remove the repository from the database
+        remove_repository_from_db(source_org_id, repo_name)
+
+        return {"success": True, "message": f"Repository {repo_url} removed from {source_org_id} and database"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
