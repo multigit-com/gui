@@ -13,8 +13,8 @@
     "web-vitals": "^1.0.1"
   },
   "scripts": {
-    "start": "react-scripts --openssl-legacy-provider start",
-    "build": "react-scripts --openssl-legacy-provider build",
+    "start": "node replace-placeholders.js && react-scripts start",
+    "build": "node replace-placeholders.js && react-scripts build",
     "test": "jest",
     "eject": "react-scripts eject"
   },
@@ -38,9 +38,7 @@
   },
   "devDependencies": {
     "jest": "^27.0.6",
-    "jest-puppeteer": "^6.2.0",
-    "puppeteer": "^10.2.0",
-    "http-server": "^14.1.0"
+    "puppeteer": "^10.2.0"
   },
   "jest": {
     "preset": "jest-puppeteer"

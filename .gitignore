@@ -136,3 +136,42 @@ dist
 # Add these lines
 node_modules/
 .env
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+
+# Node
+node_modules/
+
+# Build artifacts
+build/
+dist/
+
+# IDE files
+.vscode/
+.idea/
+
+# Test cache
+.pytest_cache/
+
+# Curl test artifacts
+curl/results/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/

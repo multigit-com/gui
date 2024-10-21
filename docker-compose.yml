@@ -4,62 +4,54 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     environment:
-      - REACT_APP_API_URL=http://api:3001
-      - REACT_APP_BACKEND_URL=http://backend:5000
-    depends_on:
-      - api
-      - backend
-
-  backend:
-    build: ./backend
-    ports:
-      - "5000:5000"
-    environment:
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - REACT_APP_API_URL=http://${API_HOSTNAME}:${API_PORT}
     volumes:
-      - ./.env:/app/.env
+      - ./frontend:/app
+      - /app/node_modules
 
   api:
     build: ./api
     ports:
-      - "3001:3001"
+      - "${API_PORT}:${API_PORT}"
     environment:
-      - PORT=3001
-      - BACKEND_URL=http://backend:5000
+      - PORT=${API_PORT}
+      - BACKEND_URL=http://${BACKEND_HOSTNAME}:${BACKEND_PORT}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
     volumes:
-      - ./backend/scripts:/app/scripts
+      - ./backend/scripts:/app/backend/scripts
+    command: npm run test
+
+  backend:
+    build: ./backend
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
+    environment:
+      - PORT=${BACKEND_PORT}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      - ./logs:/app/logs
+    command: sh -c "cd /app && pytest"
+
+  curl-tests:
+    image: curlimages/curl:latest
+    volumes:
+      - ./curl:/curl
+    command: sh -c "apk add --no-cache jq && sh /curl/curl.sh"
     depends_on:
+      - api
       - backend
 
-  github-token-updater:
-    build: ./github-token
-    ports:
-      - "3002:3002"
+  ansible:
+    image: willhallonline/ansible:latest
     volumes:
-      - ./.env:/app/.env
-
-  gitlab-token-updater:
-    build: ./gitlab-token
-    ports:
-      - "3003:3003"
-    volumes:
-      - ./.env:/app/.env
-
-  backend-test:
-    build: ./backend
-    command: pytest
+      - ./ansible:/ansible
+      - ./backend:/backend
+      - ./api:/api
     environment:
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-    volumes:
-      - ./backend:/app
+      - ANSIBLE_HOST_KEY_CHECKING=False
+    command: ansible-playbook /ansible/test_playbook.yml
 
-  frontend-test:
-    build: ./frontend
-    command: npm test
-    environment:
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-    volumes:
-      - ./frontend:/app
+volumes:
+  logs:

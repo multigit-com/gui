@@ -3,12 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repository Manager - Drag and Drop</title>
+    <title>GitHub Repository Manager</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            line-height: 1.6;
             margin: 0;
             padding: 20px;
+        }
+        #error-message {
+            color: red;
+            display: none;
         }
         .columns-container {
             display: flex;
@@ -25,10 +30,10 @@
             border: 1px solid #ddd;
             padding: 10px;
             margin: 5px 0;
-            cursor: move;
+            cursor: pointer;
         }
-        .repo-block.dragging {
-            opacity: 0.5;
+        .repo-block:hover {
+            background-color: #e0e0e0;
         }
         .repo-name {
             font-weight: bold;
@@ -40,41 +45,63 @@
         select {
             width: 100%;
             margin-bottom: 10px;
-            padding: 5px;
-            font-size: 16px;
         }
-        select option[value="load_more"] {
-            font-style: italic;
-            color: #888;
-        }
-        #error-container {
-            background-color: #ffebee;
-            border: 1px solid #f44336;
-            color: #b71c1c;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
+        .file-list {
             display: none;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .readme-preview {
+            display: none;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .trash-column {
+            background-color: #ffebee;
+            border: 2px dashed #f44336;
+        }
+        .trash-column h2 {
+            color: #f44336;
+        }
+        .removed-repo {
+            background-color: #ffcccb;
+            padding: 5px;
+            margin-bottom: 5px;
+            border-radius: 3px;
         }
     </style>
+    <script>
+        window.API_BASE_URL = 'http://localhost:3001'; // Default value
+    </script>
 </head>
 <body>
-    <div id="error-container"></div>
-    <h1>Repository Manager</h1>
+    <h1>GitHub Repository Manager</h1>
+    <div id="error-message"></div>
     <div class="columns-container">
         <div class="column" id="column1">
-            <select id="org-select1"></select>
+            <select class="org-select"></select>
             <div class="repo-list"></div>
         </div>
         <div class="column" id="column2">
-            <select id="org-select2"></select>
+            <select class="org-select"></select>
             <div class="repo-list"></div>
         </div>
         <div class="column" id="column3">
-            <select id="org-select3"></select>
+            <select class="org-select"></select>
+            <div class="repo-list"></div>
+        </div>
+        <div class="column trash-column" id="trash-column">
+            <h2>Trash</h2>
             <div class="repo-list"></div>
         </div>
     </div>
+    <button onclick="runCurlTests()">Run Curl Tests</button>
+    <button onclick="runAnsibleTests()">Run Ansible Tests</button>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.3/marked.min.js"></script>
     <script src="blocks.js"></script>
 </body>
 </html>

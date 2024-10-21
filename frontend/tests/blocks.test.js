@@ -35,6 +35,35 @@ describe('Blocks Page', () => {
     expect(repoBlocks.length).toBeGreaterThan(0);
   });
 
+  test('trash column is present', async () => {
+    const trashColumn = await page.$('#trash-column');
+    expect(trashColumn).not.toBeNull();
+  });
+
+  test('repository can be dragged to trash', async () => {
+    await page.select('select:first-of-type', 'org1');
+    await page.waitForSelector('.repo-block');
+    
+    const repoBlock = await page.$('.repo-block');
+    const trashColumn = await page.$('#trash-column');
+    
+    const repoBoundingBox = await repoBlock.boundingBox();
+    const trashBoundingBox = await trashColumn.boundingBox();
+    
+    await page.mouse.move(repoBoundingBox.x + 5, repoBoundingBox.y + 5);
+    await page.mouse.down();
+    await page.mouse.move(trashBoundingBox.x + 5, trashBoundingBox.y + 5);
+    await page.mouse.up();
+    
+    await page.waitForFunction(() => {
+      const trashColumn = document.querySelector('#trash-column');
+      return trashColumn.querySelector('.repo-block') !== null;
+    });
+    
+    const repoInTrash = await page.$('#trash-column .repo-block');
+    expect(repoInTrash).not.toBeNull();
+  });
+
   test('error is displayed when API fails', async () => {
     await page.evaluate(() => {
       window.fetch = () => Promise.reject(new Error('API Error'));

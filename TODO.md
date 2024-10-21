@@ -42,4 +42,10 @@ Enhance the GitHub Repository Manager with a new visual interface for repository
     - Add unit tests for new backend functionality.
     - Implement integration tests for the drag-and-drop feature.
 
-Remember to maintain consistency with the existing codebase and follow best practices for React and API development.
+
+
+Create list of files with size of files and show screenshot on hover mouse event for each repo block in columns
+render markdown README.md from repository in popup on hover too
+
+
+handle moving draggable event to another organisation such backend/scripts/move_repository.py
