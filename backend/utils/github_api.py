@@ -1,19 +1,26 @@
 from github import Github
 import os
 import time
+from github.GithubException import RateLimitExceededException
+from dotenv import load_dotenv
 
-def update_all_organizations(max_retries=3, delay=5):
+load_dotenv()
+
+MAX_RETRIES = int(os.getenv('MAX_RETRIES', 5))
+INITIAL_DELAY = int(os.getenv('INITIAL_DELAY', 1))
+ORG_PAGINATION_SIZE = int(os.getenv('ORG_PAGINATION_SIZE', 20))
+
+def update_all_organizations():
     github_token = os.getenv('GITHUB_TOKEN')
     if not github_token:
         raise ValueError("GITHUB_TOKEN environment variable is not set")
 
     g = Github(github_token)
     page = 1
-    ORG_PAGINATION_SIZE = int(os.getenv('ORG_PAGINATION_SIZE', 20))
 
-    for attempt in range(max_retries):
-        try:
-            while True:
+    while True:
+        for attempt in range(MAX_RETRIES):
+            try:
                 user = g.get_user()
                 organizations = user.get_orgs().get_page(page - 1)
                 org_list = []
@@ -24,14 +31,10 @@ def update_all_organizations(max_retries=3, delay=5):
                     forked_repos = sum(1 for repo in repos if repo.fork)
                     total_repos = public_repos + private_repos
 
-                    custom_name = os.getenv(f'CUSTOM_ORG_NAME_{org.login}', org.name)
-
                     org_list.append({
                         'id': org.id,
                         'name': org.name,
                         'login': org.login,
-                        'original_name': org.name,
-                        'custom_name': custom_name,
                         'public_repos': public_repos,
                         'private_repos': private_repos,
                         'forked_repos': forked_repos,
@@ -41,15 +44,17 @@ def update_all_organizations(max_retries=3, delay=5):
                 yield org_list
 
                 if len(org_list) < ORG_PAGINATION_SIZE:
-                    break
+                    return
                 
                 page += 1
-                time.sleep(1)  # To avoid hitting rate limits
-            return True
-        except Exception as e:
-            if attempt < max_retries - 1:
+                break
+            except RateLimitExceededException as e:
+                if attempt == MAX_RETRIES - 1:
+                    raise
+                delay = INITIAL_DELAY * (2 ** attempt)
+                print(f"Rate limit exceeded. Retrying in {delay} seconds...")
                 time.sleep(delay)
-            else:
+            except Exception as e:
                 raise e
 
 def list_repositories(org):

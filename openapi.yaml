@@ -1,0 +1,316 @@
+openapi: 3.0.0
+info:
+  title: GitHub Repository Manager API
+  version: 1.0.0
+  description: API for managing GitHub repositories and organizations
+
+servers:
+  - url: http://localhost:3001
+    description: Local development server
+
+paths:
+  /api/organizations:
+    get:
+      summary: List organizations
+      description: Retrieve a list of GitHub organizations
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: object
+                properties:
+                  organizations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Organization'
+        '500':
+          description: Server error
+
+  /api/repositories:
+    get:
+      summary: List repositories
+      description: Retrieve a list of repositories for a given organization
+      parameters:
+        - in: query
+          name: org
+          required: true
+          schema:
+            type: string
+          description: The organization name
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Repository'
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+  /api/repository-files:
+    get:
+      summary: List repository files
+      description: Retrieve a list of files in a repository
+      parameters:
+        - in: query
+          name: org
+          required: true
+          schema:
+            type: string
+          description: The organization name
+        - in: query
+          name: repo
+          required: true
+          schema:
+            type: string
+          description: The repository name
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/File'
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+  /api/readme:
+    get:
+      summary: Get README content
+      description: Retrieve the README content of a repository
+      parameters:
+        - in: query
+          name: org
+          required: true
+          schema:
+            type: string
+          description: The organization name
+        - in: query
+          name: repo
+          required: true
+          schema:
+            type: string
+          description: The repository name
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: string
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+  /api/move-repository:
+    post:
+      summary: Move repository
+      description: Move a repository from one organization to another
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                repoId:
+                  type: string
+                repoName:
+                  type: string
+                sourceOrgId:
+                  type: string
+                targetOrgId:
+                  type: string
+              required:
+                - repoId
+                - repoName
+                - sourceOrgId
+                - targetOrgId
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+  /api/remove-repository:
+    post:
+      summary: Remove repository
+      description: Remove a repository from GitHub
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                repoUrl:
+                  type: string
+                sourceOrgId:
+                  type: string
+              required:
+                - repoUrl
+                - sourceOrgId
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+  /api/rename-organization:
+    post:
+      summary: Rename organization
+      description: Rename a GitHub organization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orgId:
+                  type: string
+                newName:
+                  type: string
+              required:
+                - orgId
+                - newName
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+  /api/rename-repository:
+    post:
+      summary: Rename repository
+      description: Rename a GitHub repository
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                orgName:
+                  type: string
+                oldName:
+                  type: string
+                newName:
+                  type: string
+              required:
+                - orgName
+                - oldName
+                - newName
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+  /api/repo:
+    get:
+      summary: Get current repository
+      description: Get the current repository information
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:    
+              schema:
+                type: object
+                properties:
+                  org:
+                    type: string
+                  repo:
+                    type: string
+    post:
+      summary: Set current repository
+      description: Set the current repository information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                org:
+                  type: string
+                repo:
+                  type: string
+              required:
+                - org
+                - repo
+      responses:
+        '200':
+          description: Successful response
+        '400':
+          description: Bad request
+
+components:
+  schemas:
+    Organization:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        login:
+          type: string
+        public_repos:
+          type: integer
+        private_repos:
+          type: integer
+        forked_repos:
+          type: integer
+        total_repos:
+          type: integer
+
+    Repository:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        full_name:
+          type: string
+        html_url:
+          type: string
+        description:
+          type: string
+
+    File:
+      type: object
+      properties:
+        path:
+          type: string
+        size:
+          type: integer
+        type:
+          type: string

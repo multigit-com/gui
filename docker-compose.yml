@@ -3,34 +3,40 @@ version: '3.8'
 services:
   frontend:
     build: ./frontend
+    hostname: ${FRONTEND_HOSTNAME}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     environment:
-      - REACT_APP_API_URL=http://${API_HOSTNAME}:${API_PORT}
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
+    env_file:
+      - .env
+    networks:
+      - app-network
 
   api:
     build: ./api
+    hostname: ${API_HOSTNAME}
     ports:
       - "${API_PORT}:${API_PORT}"
     environment:
-      - PORT=${API_PORT}
-      - BACKEND_URL=http://${BACKEND_HOSTNAME}:${BACKEND_PORT}
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-    volumes:
-      - ./backend/scripts:/app/backend/scripts
+      - BACKEND_URL=http://backend:5000
+    env_file:
+      - .env
+    networks:
+      - app-network
 
   backend:
     build: ./backend
+    hostname: ${BACKEND_HOSTNAME}
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
-      - PORT=${BACKEND_PORT}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
-    volumes:
-      - ./logs:/app/logs
+    env_file:
+      - .env
+    networks:
+      - app-network
 
-volumes:
-  logs:
+networks:
+  app-network:
+    driver: bridge

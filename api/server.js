@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://backend:5000';
 
 // Repository files
 app.get('/api/repository-files', (req, res) => proxyRequest(req, res, '/api/repository-files', BACKEND_URL));

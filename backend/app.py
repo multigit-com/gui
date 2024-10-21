@@ -20,7 +20,9 @@ CORS(app)
 
 logging.basicConfig(level=logging.INFO)
 
-CACHE_DURATION = int(os.getenv('CACHE_DURATION', 300))
+CACHE_DURATION = int(os.getenv('CACHE_DURATION', 3600))  # Set to 1 hour by default
+BACKEND_HOSTNAME = os.getenv('BACKEND_HOSTNAME', 'localhost')
+BACKEND_PORT = int(os.getenv('BACKEND_PORT', 5000))
 
 init_db()
 
@@ -30,14 +32,20 @@ def get_organizations():
         cached_orgs = get_cached_organizations()
         current_time = int(time.time())
         
-        if not cached_orgs or (current_time - cached_orgs[0]['last_updated'] >= CACHE_DURATION):
-            for org_list in update_all_organizations():
-                cache_organizations(org_list)
-            cached_orgs = get_cached_organizations()
+        if cached_orgs and (current_time - cached_orgs[0]['last_updated'] < CACHE_DURATION):
+            return jsonify({"organizations": cached_orgs})
         
-        return jsonify({"organizations": cached_orgs})
+        new_orgs = []
+        for org_list in update_all_organizations():
+            new_orgs.extend(org_list)
+            cache_organizations(org_list)
+        
+        return jsonify({"organizations": new_orgs})
     except Exception as e:
         app.logger.error(f"Error fetching organizations: {str(e)}", exc_info=True)
+        cached_orgs = get_cached_organizations()
+        if cached_orgs:
+            return jsonify({"organizations": cached_orgs, "cached": True})
         return jsonify({"error": "Failed to fetch organizations", "details": str(e)}), 500
 
 @app.route('/api/repositories', methods=['GET'])
@@ -240,5 +248,4 @@ def remove_org():
         return jsonify({"error": "Failed to remove organization", "details": str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host=BACKEND_HOSTNAME, port=BACKEND_PORT, debug=True)

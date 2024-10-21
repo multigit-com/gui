@@ -26,6 +26,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated database schema to match current organization data structure
 
 
+## [0.9.0] - 2024-10-26
+
+### Added
+- Environment variables for cache duration, max retries, and initial delay
+- Implemented retry mechanism with exponential backoff for GitHub API requests
+- More aggressive caching to reduce API calls and handle rate limits
+- Warning message when using cached data due to API rate limits
+- Axios dependency to API server for HTTP requests
+
+### Changed
+- Updated `github_api.py` to use environment variables for API request settings
+- Modified `app.py` to use the CACHE_DURATION from environment variables
+- Improved error handling and user feedback for API rate limit errors
+- Updated backend server to use BACKEND_HOSTNAME from .env file
+- Improved configuration management for backend server
+- Updated Docker and Docker Compose configurations to use hostnames and ports from .env file
+- Modified Dockerfiles for frontend, API, and backend to use environment variables for hostnames and ports
+
+### Fixed
+- Issues with API rate limit exceeded errors
+- Improved reliability of organization and repository fetching
+- "Cannot find module 'axios'" error in API server
+- Connection issue between API and backend services in Docker environment
+- Updated BACKEND_URL configuration for proper inter-service communication
+
 ## [0.8.0] - 2024-10-25
 
 ### Added
@@ -54,7 +79,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved error handling and user feedback across the application
 - Enhanced the move repository functionality to prevent multiple simultaneous requests
 - Refactored API server (server.js) to use proxy requests for all endpoints
-- Removed confirmation prompt when deleting a repository for a more streamlined user experience
 - Moved database and cache configuration to environment variables
 
 ### Fixed

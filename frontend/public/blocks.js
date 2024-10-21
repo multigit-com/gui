@@ -13,6 +13,9 @@ function fetchOrganizations() {
     })
     .then(data => {
       console.log('Organizations fetched successfully:', data);
+      if (data.cached) {
+        showWarning('Using cached data. Some information may be outdated.');
+      }
       populateOrganizationSelects(data.organizations);
     })
     .catch(error => {
@@ -352,6 +355,14 @@ function runAnsibleTests() {
         console.error('Error running Ansible tests:', error);
         alert('Error running Ansible tests. Check the console for details.');
     });
+}
+
+function showWarning(message) {
+  const warningElement = document.createElement('div');
+  warningElement.className = 'warning-message';
+  warningElement.textContent = message;
+  document.body.insertBefore(warningElement, document.body.firstChild);
+  setTimeout(() => warningElement.remove(), 5000);
 }
 
 // Initialize the page
