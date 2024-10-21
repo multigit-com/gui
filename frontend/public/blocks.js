@@ -28,7 +28,7 @@ function populateOrganizationSelects(organizations) {
     organizations.forEach(org => {
       const option = document.createElement('option');
       option.value = org.id;
-      option.textContent = `${org.name} (Repos: ${org.public_repos}, Forks: ${org.forks_count})`;
+      option.textContent = `${org.name} (Public: ${org.public_repos}, Private: ${org.private_repos}, Forked: ${org.forked_repos}, Total: ${org.total_repos})`;
       select.appendChild(option);
     });
 

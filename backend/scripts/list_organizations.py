@@ -22,17 +22,30 @@ def list_all_organizations():
         organizations = user.get_orgs()
         org_list = []
         for org in organizations:
+            repos = org.get_repos()
+            public_repos = org.public_repos
+            private_repos = sum(1 for repo in repos if repo.private)
+            forked_repos = sum(1 for repo in repos if repo.fork)
+            total_repos = public_repos + private_repos
+
+            # Get custom name from environment variable or use original name
+            custom_name = os.getenv(f'CUSTOM_ORG_NAME_{org.login}', org.name)
+
             org_list.append({
                 'id': org.id,
                 'name': org.name,
                 'login': org.login,
-                'public_repos': org.public_repos,
-                'forks_count': org.get_repos().totalCount  # This is an approximation of forks across all repos
+                'original_name': org.name,
+                'custom_name': custom_name,
+                'public_repos': public_repos,
+                'private_repos': private_repos,
+                'forked_repos': forked_repos,
+                'total_repos': total_repos
             })
         return {"organizations": org_list}
     except Exception as e:
-        print(f"Error listing organizations: {str(e)}")
+        logger.error(f"Error listing organizations: {str(e)}")
         raise
 
 if __name__ == '__main__':
-    print(list_all_organizations())
+    print(json.dumps(list_all_organizations()))

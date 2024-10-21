@@ -21,16 +21,9 @@ def remove_repository_from_github_by_url_repo(repo_url, source_org_id):
         # Delete the repository
         repo.delete()
 
-        # Log the removal (without using an external script)
-        log_message = f"Repository {repo_url} removed from {source_org_id}"
-        print(log_message)  # Print to console
-        # You can add more logging here if needed
-
-        return {"success": True, "message": log_message}
+        return {"success": True, "message": f"Repository {repo_url} removed from {source_org_id}"}
     except Exception as e:
-        error_message = f"Error removing repository: {str(e)}"
-        print(error_message)  # Print to console
-        return {"success": False, "error": error_message}
+        return {"success": False, "error": str(e)}
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:

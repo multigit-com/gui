@@ -31,7 +31,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(f'''CREATE TABLE IF NOT EXISTS {ORGANIZATIONS_TABLE}
-                 (id INTEGER PRIMARY KEY, name TEXT, login TEXT, public_repos INTEGER, forks_count INTEGER, last_updated INTEGER)''')
+                 (id INTEGER PRIMARY KEY, name TEXT, login TEXT, public_repos INTEGER, private_repos INTEGER, forked_repos INTEGER, total_repos INTEGER, forks_count INTEGER, last_updated INTEGER)''')
     c.execute(f'''CREATE TABLE IF NOT EXISTS {REPOSITORIES_TABLE}
                  (id INTEGER PRIMARY KEY, name TEXT, org TEXT, html_url TEXT, description TEXT, last_updated INTEGER)''')
     conn.commit()
@@ -43,8 +43,24 @@ def cache_organizations(organizations):
     current_time = int(time.time())
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.executemany(f'INSERT OR REPLACE INTO {ORGANIZATIONS_TABLE} VALUES (?, ?, ?, ?, ?, ?)',
-                  [(org['id'], org['name'], org['login'], org['public_repos'], org['forks_count'], current_time) for org in organizations])
+    
+    # Get the current table structure
+    c.execute(f'PRAGMA table_info({ORGANIZATIONS_TABLE})')
+    columns = [column[1] for column in c.fetchall()]
+    
+    # Prepare the SQL query
+    placeholders = ', '.join(['?' for _ in columns])
+    sql = f'INSERT OR REPLACE INTO {ORGANIZATIONS_TABLE} ({", ".join(columns)}) VALUES ({placeholders})'
+    
+    # Prepare the data
+    data = []
+    for org in organizations:
+        row = [org.get(column, None) for column in columns]
+        row.append(current_time)  # Add last_updated
+        data.append(tuple(row))
+    
+    # Execute the query
+    c.executemany(sql, data)
     conn.commit()
     conn.close()
 
@@ -61,7 +77,13 @@ def get_cached_organizations():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(f'SELECT * FROM {ORGANIZATIONS_TABLE}')
-    orgs = [{'id': row[0], 'name': row[1], 'login': row[2], 'public_repos': row[3], 'forks_count': row[4], 'last_updated': row[5]} for row in c.fetchall()]
+    columns = [column[0] for column in c.description]
+    orgs = []
+    for row in c.fetchall():
+        org = {}
+        for i, column in enumerate(columns):
+            org[column] = row[i]
+        orgs.append(org)
     conn.close()
     return orgs
 
@@ -183,10 +205,16 @@ def remove_repo():
         return jsonify({'error': 'Missing required parameters'}), 400
     try:
         result = remove_repository_from_github_by_url_repo(repo_url, source_org_id)
+        if result.get('success'):
+            # Update the cache for the organization
+            org_data = list_all_organizations()
+            cache_organizations(org_data['organizations'])
+            
+            # Update the cache for the repositories of this organization
+            repos = list_repositories(source_org_id)
+            cache_repositories(source_org_id, repos)
+        
         return jsonify(result)
-    except FileNotFoundError as e:
-        app.logger.error(f"File not found error: {str(e)}")
-        return jsonify({"error": "Failed to remove repository", "details": "Required script not found"}), 500
     except Exception as e:
         app.logger.error(f"Error removing repository: {str(e)}")
         return jsonify({"error": "Failed to remove repository", "details": str(e)}), 500
@@ -263,6 +291,26 @@ def update_env_file(key, value):
     
     with open(env_path, 'w') as file:
         file.writelines(lines)
+
+# Add a new route to remove an organization
+@app.route('/api/remove-organization', methods=['POST'])
+def remove_org():
+    data = request.json
+    org_id = data.get('orgId')
+    if not org_id:
+        return jsonify({'error': 'Missing required parameter: orgId'}), 400
+    try:
+        # Implement the remove_organization function in a new script
+        result = remove_organization(org_id)
+        if result.get('success'):
+            # Update the cache for all organizations
+            org_data = list_all_organizations()
+            cache_organizations(org_data['organizations'])
+        
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error(f"Error removing organization: {str(e)}")
+        return jsonify({"error": "Failed to remove organization", "details": str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

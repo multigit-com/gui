@@ -9,12 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Comprehensive TEST.md guide for running all types of tests
+- New `run_all_tests.sh` bash script to execute all tests in sequence
+- New Ansible playbook for comprehensive API testing
+- Tests for new endpoints: rename organization, rename repository, and remove organization
+- Updated run_tests.yml to include new API tests
+- Moved curl_tests.sh to curl/backend directory
+- Updated curl_tests.sh to use environment variables
+- Added new environment variables for curl tests in .env file
+- New curl_tests.sh script for comprehensive API testing
+- Automatic cache update after removing a repository or organization
+- New endpoint to remove an organization and all its repositories
+- Improved error handling and logging for removal operations
+
+### Changed
+- Updated remove repository functionality to refresh organization and repository data
+- Enhanced database caching mechanism to reflect real-time changes
+- Extended curl tests to cover all major API endpoints
+- Refactored curl tests to use environment variables for better configurability and security
+- Modified `run_all_tests.sh` to use absolute paths, fixing directory change issues
+
+### Fixed
+- Issue with database column mismatch in `get_cached_organizations` function
+- Fixed "cd: too many arguments" error in `run_all_tests.sh` script
+
+### Added
+- Enhanced organization information in API response, including original name and custom name
+- Environment variable support for custom organization names
+- Updated SQLite schema to store additional organization information
+- Enhanced organization information in select lists, including counts for public, private, forked, and total repositories
+- Updated frontend to display detailed repository counts for each organization
 - Environment variables for database configuration and cache duration
 - Implemented a 5-minute cache refresh mechanism for repository and organization data
 - Added timestamp tracking for cached data in SQLite database
 - SQLite caching for organization and repository data
 - Fallback to cached data when GitHub API requests fail
-- Enhanced organization information in select lists, including number of repositories and forks
 - New rename.html page for renaming organizations and repositories
 - API endpoints for renaming organizations and repositories
 - Scripts for handling organization and repository renaming
@@ -39,6 +68,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Various minor bug fixes and performance improvements
 
 
+
+## [0.6.0] - 2024-10-24
+
+### Added
+- Comprehensive TEST.md guide for running all types of tests
+- New `run_all_tests.sh` bash script to execute all tests in sequence
+- Detailed descriptions of unit tests, integration tests, API tests, curl tests, and end-to-end tests in TEST.md
+- Instructions for running individual test types and all tests together
+- Guidance on adding new tests and troubleshooting in TEST.md
+- Information about continuous integration, performance testing, security testing, and accessibility testing in TEST.md
+
+### Changed
+- Updated testing procedures to include new test types and methodologies
+- Improved error handling and logging in test scripts
+- Enhanced documentation for testing processes
+
+### Fixed
+- Issues with test script paths in `run_all_tests.sh`
+- Inconsistencies in test environment setup instructions
 
 ## [0.5.0] - 2024-10-23
 

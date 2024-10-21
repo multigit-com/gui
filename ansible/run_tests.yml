@@ -1,0 +1,10 @@
+---
+- name: Run all tests
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Run API tests
+      ansible.builtin.import_playbook: api_tests.yml
+
+    # Add other test playbooks here if needed

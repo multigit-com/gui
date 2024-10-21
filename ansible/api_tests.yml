@@ -1,0 +1,124 @@
+---
+- name: Test GitHub Repository Manager API
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - ../backend/.env
+
+  tasks:
+    - name: Test GET /api/organizations
+      uri:
+        url: "{{ API_URL }}/api/organizations"
+        method: GET
+        headers:
+          Authorization: "token {{ GITHUB_TOKEN }}"
+        return_content: yes
+      register: org_response
+      failed_when: org_response.status != 200
+
+    - name: Test GET /api/repositories
+      uri:
+        url: "{{ API_URL }}/api/repositories?org={{ TEST_ORG }}"
+        method: GET
+        headers:
+          Authorization: "token {{ GITHUB_TOKEN }}"
+        return_content: yes
+      register: repo_response
+      failed_when: repo_response.status != 200
+
+    - name: Test GET /api/repository-files
+      uri:
+        url: "{{ API_URL }}/api/repository-files?org={{ TEST_ORG }}&repo={{ TEST_REPO }}"
+        method: GET
+        headers:
+          Authorization: "token {{ GITHUB_TOKEN }}"
+        return_content: yes
+      register: files_response
+      failed_when: files_response.status != 200
+
+    - name: Test GET /api/readme
+      uri:
+        url: "{{ API_URL }}/api/readme?org={{ TEST_ORG }}&repo={{ TEST_REPO }}"
+        method: GET
+        headers:
+          Authorization: "token {{ GITHUB_TOKEN }}"
+        return_content: yes
+      register: readme_response
+      failed_when: readme_response.status != 200
+
+    - name: Test POST /api/move-repository
+      uri:
+        url: "{{ API_URL }}/api/move-repository"
+        method: POST
+        headers:
+          Authorization: "token {{ GITHUB_TOKEN }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          repoId: "{{ TEST_REPO_ID }}"
+          repoName: "{{ TEST_REPO }}"
+          sourceOrgId: "{{ TEST_SOURCE_ORG }}"
+          targetOrgId: "{{ TEST_TARGET_ORG }}"
+        return_content: yes
+      register: move_response
+      failed_when: move_response.status != 200
+
+    - name: Test POST /api/rename-organization
+      uri:
+        url: "{{ API_URL }}/api/rename-organization"
+        method: POST
+        headers:
+          Authorization: "token {{ GITHUB_TOKEN }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          orgId: "{{ TEST_ORG_ID }}"
+          newName: "{{ TEST_NEW_ORG_NAME }}"
+        return_content: yes
+      register: rename_org_response
+      failed_when: rename_org_response.status != 200
+
+    - name: Test POST /api/rename-repository
+      uri:
+        url: "{{ API_URL }}/api/rename-repository"
+        method: POST
+        headers:
+          Authorization: "token {{ GITHUB_TOKEN }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          orgName: "{{ TEST_ORG }}"
+          oldName: "{{ TEST_REPO }}"
+          newName: "{{ TEST_NEW_REPO_NAME }}"
+        return_content: yes
+      register: rename_repo_response
+      failed_when: rename_repo_response.status != 200
+
+    - name: Test POST /api/remove-repository
+      uri:
+        url: "{{ API_URL }}/api/remove-repository"
+        method: POST
+        headers:
+          Authorization: "token {{ GITHUB_TOKEN }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          repoUrl: "{{ TEST_REPO_URL }}"
+          sourceOrgId: "{{ TEST_ORG }}"
+        return_content: yes
+      register: remove_repo_response
+      failed_when: remove_repo_response.status != 200
+
+    - name: Test POST /api/remove-organization
+      uri:
+        url: "{{ API_URL }}/api/remove-organization"
+        method: POST
+        headers:
+          Authorization: "token {{ GITHUB_TOKEN }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          orgId: "{{ TEST_ORG_ID }}"
+        return_content: yes
+      register: remove_org_response
+      failed_when: remove_org_response.status != 200
