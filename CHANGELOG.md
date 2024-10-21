@@ -9,16 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Entrypoint scripts for API and backend services to copy .env file on container start
-- Volume mounts in docker-compose.yml to make .env file available to containers
+- Implemented retry mechanism with exponential backoff for GitHub API requests
+- Added error handling for request timeouts and other network issues
+- Improved logging for README fetching process
 
 ### Changed
-- Updated Dockerfiles to use specific Alpine-based images for smaller size and faster builds
-- Added retry mechanism in docker-compose.yml for improved reliability during builds
-- Improved error handling in Dockerfiles for network-related issues
+- Updated organization fetching process to be more resilient to failures
+- Modified API to use cached data when updates fail due to network issues
+- Enhanced README fetching to include retry logic
 
 ### Fixed
-- Frontend now uses the correct hostname and port as specified in the .env file
+- Improved handling of connection errors when fetching README content
+- Enhanced error reporting for failed API requests
 
 ## [0.10.0] - 2024-10-27
 

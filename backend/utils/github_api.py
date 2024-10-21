@@ -3,6 +3,8 @@ import os
 import time
 from github.GithubException import RateLimitExceededException
 from dotenv import load_dotenv
+import requests
+from requests.exceptions import RequestException
 
 load_dotenv()
 
@@ -25,7 +27,7 @@ def update_all_organizations():
                 organizations = user.get_orgs().get_page(page - 1)
                 org_list = []
                 for org in organizations:
-                    repos = org.get_repos()
+                    repos = fetch_repos_with_retry(org)
                     public_repos = org.public_repos
                     private_repos = sum(1 for repo in repos if repo.private)
                     forked_repos = sum(1 for repo in repos if repo.fork)
@@ -48,14 +50,25 @@ def update_all_organizations():
                 
                 page += 1
                 break
-            except RateLimitExceededException as e:
+            except (RateLimitExceededException, RequestException) as e:
                 if attempt == MAX_RETRIES - 1:
                     raise
                 delay = INITIAL_DELAY * (2 ** attempt)
-                print(f"Rate limit exceeded. Retrying in {delay} seconds...")
+                print(f"Error occurred: {str(e)}. Retrying in {delay} seconds...")
                 time.sleep(delay)
             except Exception as e:
                 raise e
+
+def fetch_repos_with_retry(org):
+    for attempt in range(MAX_RETRIES):
+        try:
+            return list(org.get_repos())
+        except (RateLimitExceededException, RequestException) as e:
+            if attempt == MAX_RETRIES - 1:
+                raise
+            delay = INITIAL_DELAY * (2 ** attempt)
+            print(f"Error fetching repos for {org.login}: {str(e)}. Retrying in {delay} seconds...")
+            time.sleep(delay)
 
 def list_repositories(org):
     github_token = os.getenv('GITHUB_TOKEN')
@@ -65,7 +78,7 @@ def list_repositories(org):
     g = Github(github_token)
     try:
         organization = g.get_organization(org)
-        repos = organization.get_repos()
+        repos = fetch_repos_with_retry(organization)
         return [repo.raw_data for repo in repos]
     except Exception as e:
         raise e

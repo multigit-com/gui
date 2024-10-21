@@ -12,6 +12,7 @@ from scripts.remove_repository_from_github_by_url_repo import remove_repository_
 from scripts.get_readme import get_readme_content
 from scripts.rename_organization import rename_organization_script
 from scripts.rename_repository import rename_repository_script
+from requests.exceptions import RequestException
 
 # Load .env from the root directory
 from dotenv import load_dotenv
@@ -37,21 +38,27 @@ def get_organizations():
     try:
         cached_orgs = get_cached_organizations()
         current_time = int(time.time())
-
+        
         if cached_orgs and (current_time - cached_orgs[0]['last_updated'] < CACHE_DURATION):
             return jsonify({"organizations": cached_orgs})
-
+        
         new_orgs = []
-        for org_list in update_all_organizations():
-            new_orgs.extend(org_list)
-            cache_organizations(org_list)
-
+        try:
+            for org_list in update_all_organizations():
+                new_orgs.extend(org_list)
+                cache_organizations(org_list)
+        except (RateLimitExceededException, RequestException) as e:
+            app.logger.error(f"Error updating organizations: {str(e)}")
+            if cached_orgs:
+                return jsonify({"organizations": cached_orgs, "cached": True, "error": str(e)})
+            raise
+        
         return jsonify({"organizations": new_orgs})
     except Exception as e:
         app.logger.error(f"Error fetching organizations: {str(e)}", exc_info=True)
         cached_orgs = get_cached_organizations()
         if cached_orgs:
-            return jsonify({"organizations": cached_orgs, "cached": True})
+            return jsonify({"organizations": cached_orgs, "cached": True, "error": str(e)})
         return jsonify({"error": "Failed to fetch organizations", "details": str(e)}), 500
 
 @app.route('/api/repositories', methods=['GET'])
