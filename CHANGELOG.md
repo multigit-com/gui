@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Automatic refresh of repository list after removing a repository
+
 ### Changed
 - Removed 'original_name' and 'custom_name' columns from the organizations table in the database
 - Updated organization listing and caching functions to reflect the removed columns

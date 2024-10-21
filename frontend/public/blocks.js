@@ -301,6 +301,12 @@ function removeRepository(repo) {
       const repoBlock = document.querySelector(`.repo-block[data-repo-id="${repo.id}"]`);
       repoBlock.remove();
       console.log('Repository removed:', data);
+      
+      // Refresh the repository list for the organization
+      const orgSelect = repoBlock.closest('.column').querySelector('.org-select');
+      if (orgSelect) {
+        fetchRepositories(orgSelect.value, repoBlock.closest('.column'));
+      }
     } else {
       console.error('Failed to remove repository:', data.message);
       alert(`Failed to remove repository: ${data.message}`);
