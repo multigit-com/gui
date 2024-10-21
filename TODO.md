@@ -9,3 +9,37 @@ Create that script remove_repository_from_github_by_url_repo.py there
 get token from .env
 and run on frontend with post data input urlfrom input
 create another function to create repository in the same way
+
+
+Enhance the GitHub Repository Manager with a new visual interface for repository management across organizations:
+
+1. Create a new file `blocks.html` in the `frontend/public` directory:
+    - Implement a columnar layout with draggable repository blocks.
+    - Each column represents a different organization.
+    - Add a select list at the top of each column to choose an organization.
+
+2. Update the backend API:
+    - Create a new endpoint `/api/organizations` to list all available organizations.
+    - Modify the existing `/api/scripts` endpoint to include repository listing functionality.
+    - Implement filtering capabilities for organizations and repositories.
+
+3. Enhance the frontend JavaScript:
+    - Fetch and populate the organization select lists.
+    - Load repositories for selected organizations.
+    - Implement drag-and-drop functionality for moving repositories between columns.
+    - Use the existing `move_repository` function when a repository is dropped in a new column.
+
+4. Styling and UX:
+    - Style the columns, repository blocks, and select lists for a clean, modern look.
+    - Implement smooth animations for dragging and dropping.
+    - Add loading indicators and error handling.
+
+5. Integration:
+    - Ensure the new interface works seamlessly with the existing backend.
+    - Update the audit logging to record repository moves initiated from this new interface.
+
+6. Testing:
+    - Add unit tests for new backend functionality.
+    - Implement integration tests for the drag-and-drop feature.
+
+Remember to maintain consistency with the existing codebase and follow best practices for React and API development.

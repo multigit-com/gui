@@ -1,90 +1,41 @@
-import os
 import sys
+import json
 import requests
 from dotenv import load_dotenv
-from log_utils import setup_logger
+import os
 
-logger = setup_logger('move_repository')
+load_dotenv()
 
-def move_repository(source_url, target_url):
-    logger.info(f"Starting repository move process from {source_url} to {target_url}")
-    load_dotenv()  # This will load from the default .env file
-    
-    GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
-    if not GITHUB_TOKEN:
-        logger.error('GITHUB_TOKEN not found in the environment variables.')
-        return {'success': False, 'message': 'GITHUB_TOKEN not found in the environment variables.'}
-
+def move_repository(repo_id, source_org, target_org):
+    github_token = os.getenv('GITHUB_TOKEN')
     headers = {
-        'Authorization': f'token {GITHUB_TOKEN}',
+        'Authorization': f'token {github_token}',
         'Accept': 'application/vnd.github.v3+json'
     }
-
-    # Extract owner and repo name from the URLs
-    _, _, _, source_owner, source_repo = source_url.rstrip('/').split('/')
-    target_parts = target_url.rstrip('/').split('/')
-    target_owner = target_parts[3]
-    target_repo = target_parts[4] if len(target_parts) > 4 else source_repo
-
-    logger.info(f"Moving repository: {source_owner}/{source_repo} to {target_owner}/{target_repo}")
-
-    # Get repository information
-    get_repo_url = f'https://api.github.com/repos/{source_owner}/{source_repo}'
-    logger.info(f"Fetching repository information from {get_repo_url}")
-    response = requests.get(get_repo_url, headers=headers)
-    if response.status_code != 200:
-        logger.error(f"Failed to fetch repository information. Status code: {response.status_code}")
-        return {'success': False, 'message': f'Failed to fetch repository information. Status code: {response.status_code}'}
-
-    repo_info = response.json()
-
-    # Create new repository
-    create_url = f'https://api.github.com/orgs/{target_owner}/repos'
-    create_data = {
-        "name": target_repo,
-        "description": repo_info.get('description', ''),
-        "private": repo_info['private']
-    }
-    logger.info(f"Creating new repository: {target_owner}/{target_repo}")
-    response = requests.post(create_url, headers=headers, json=create_data)
-    if response.status_code != 201:
-        logger.error(f"Failed to create new repository. Status code: {response.status_code}")
-        return {'success': False, 'message': f'Failed to create new repository. Status code: {response.status_code}'}
-
-    new_repo_info = response.json()
-
-    # Clone and push repository
-    clone_url = f'https://{GITHUB_TOKEN}@github.com/{source_owner}/{source_repo}.git'
-    push_url = new_repo_info['clone_url'].replace('https://', f'https://{GITHUB_TOKEN}@')
     
-    os.system(f'git clone --mirror {clone_url} temp_repo')
-    os.chdir('temp_repo')
-    os.system(f'git push --mirror {push_url}')
-    os.chdir('..')
-    os.system('rm -rf temp_repo')
-
-    # Delete the source repository
-    delete_url = f'https://api.github.com/repos/{source_owner}/{source_repo}'
-    logger.info(f"Deleting source repository: {source_owner}/{source_repo}")
-    response = requests.delete(delete_url, headers=headers)
+    # Get repository details
+    repo_url = f'https://api.github.com/repositories/{repo_id}'
+    repo_response = requests.get(repo_url, headers=headers)
+    if repo_response.status_code != 200:
+        return {'success': False, 'message': 'Failed to fetch repository details'}
     
-    if response.status_code != 204:
-        logger.error(f"Failed to delete source repository. Status code: {response.status_code}")
-        return {'success': False, 'message': f'Repository was copied but not deleted from source. Please delete manually. New URL: {new_repo_info["html_url"]}'}
+    repo_data = repo_response.json()
+    repo_name = repo_data['name']
 
-    logger.info(f"Repository successfully moved from {source_url} to {new_repo_info['html_url']}")
-    return {'success': True, 'message': f"Repository moved successfully. New URL: {new_repo_info['html_url']}"}
+    # Transfer repository
+    transfer_url = f'https://api.github.com/repos/{source_org}/{repo_name}/transfer'
+    transfer_data = {'new_owner': target_org}
+    transfer_response = requests.post(transfer_url, headers=headers, json=transfer_data)
+    
+    if transfer_response.status_code == 202:
+        return {'success': True, 'message': f'Repository {repo_name} moved successfully'}
+    else:
+        return {'success': False, 'message': 'Failed to move repository'}
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        logger.error("Incorrect number of arguments provided.")
-        print("Usage: python move_repository.py <source_url> <target_url>")
-        sys.exit(1)
-
-    source_url = sys.argv[1]
-    target_url = sys.argv[2]
-    
-    logger.info(f"Script started with source_url: {source_url}, target_url: {target_url}")
-    result = move_repository(source_url, target_url)
-    logger.info(f"Script finished with result: {result}")
-    print(result)
+    if len(sys.argv) != 4:
+        print(json.dumps({'error': 'Required parameters: repo_id, source_org, target_org'}))
+    else:
+        repo_id, source_org, target_org = sys.argv[1], sys.argv[2], sys.argv[3]
+        result = move_repository(repo_id, source_org, target_org)
+        print(json.dumps(result))

@@ -25,11 +25,16 @@ services:
     build: ./api
     ports:
       - "3001:3001"
+    environment:
+      - PORT=3001
+      - BACKEND_URL=http://backend:5000
     volumes:
       - ./backend/scripts:/app/scripts
+    depends_on:
+      - backend
 
   github-token-updater:
-    build: github-token
+    build: ./github-token
     ports:
       - "3002:3002"
     volumes:

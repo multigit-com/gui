@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repository Manager - Drag and Drop</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .columns-container {
+            display: flex;
+            justify-content: space-around;
+        }
+        .column {
+            width: 30%;
+            min-height: 400px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .repo-block {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 5px 0;
+            cursor: move;
+        }
+        select {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Repository Manager</h1>
+    <div class="columns-container">
+        <div class="column" id="column1">
+            <select id="org-select1"></select>
+            <div class="repo-list"></div>
+        </div>
+        <div class="column" id="column2">
+            <select id="org-select2"></select>
+            <div class="repo-list"></div>
+        </div>
+        <div class="column" id="column3">
+            <select id="org-select3"></select>
+            <div class="repo-list"></div>
+        </div>
+    </div>
+    <script src="blocks.js"></script>
+</body>
+</html>
