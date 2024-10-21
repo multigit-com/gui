@@ -175,3 +175,4 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+github_cache.db

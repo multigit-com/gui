@@ -4,6 +4,9 @@ function fetchOrganizations() {
   fetch(`${API_BASE_URL}/api/organizations`)
     .then(response => {
       if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please try again later.');
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       return response.json();
@@ -14,7 +17,7 @@ function fetchOrganizations() {
     })
     .catch(error => {
       console.error('Error fetching organizations:', error);
-      showError('Failed to fetch organizations');
+      showError(error.message || 'Failed to fetch organizations');
     });
 }
 
@@ -25,7 +28,7 @@ function populateOrganizationSelects(organizations) {
     organizations.forEach(org => {
       const option = document.createElement('option');
       option.value = org.id;
-      option.textContent = org.name;
+      option.textContent = `${org.name} (Repos: ${org.public_repos}, Forks: ${org.forks_count})`;
       select.appendChild(option);
     });
 
@@ -287,28 +290,26 @@ function moveRepository(data, draggable, targetOrgId, zone) {
 }
 
 function removeRepository(repo) {
-  if (confirm(`Are you sure you want to remove the repository "${repo.name}"?`)) {
-    fetch(`${API_BASE_URL}/api/remove-repository`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repoUrl: repo.html_url, sourceOrgId: repo.org })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        const repoBlock = document.querySelector(`.repo-block[data-repo-id="${repo.id}"]`);
-        repoBlock.remove();
-        console.log('Repository removed:', data);
-      } else {
-        console.error('Failed to remove repository:', data.message);
-        alert(`Failed to remove repository: ${data.message}`);
-      }
-    })
-    .catch(error => {
-      console.error('Error removing repository:', error);
-      alert('Error removing repository. Please try again.');
-    });
-  }
+  fetch(`${API_BASE_URL}/api/remove-repository`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ repoUrl: repo.html_url, sourceOrgId: repo.org })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      const repoBlock = document.querySelector(`.repo-block[data-repo-id="${repo.id}"]`);
+      repoBlock.remove();
+      console.log('Repository removed:', data);
+    } else {
+      console.error('Failed to remove repository:', data.message);
+      alert(`Failed to remove repository: ${data.message}`);
+    }
+  })
+  .catch(error => {
+    console.error('Error removing repository:', error);
+    alert('Error removing repository. Please try again.');
+  });
 }
 
 function showError(message) {
