@@ -1,73 +1,170 @@
 document.addEventListener('DOMContentLoaded', () => {
     const columns = document.querySelectorAll('.column');
     const orgSelects = document.querySelectorAll('select');
+    const errorContainer = document.createElement('div');
+    errorContainer.id = 'error-container';
+    errorContainer.style.color = 'red';
+    errorContainer.style.marginBottom = '10px';
+    document.body.insertBefore(errorContainer, document.body.firstChild);
 
-    // Fetch organizations and populate select lists
-    fetch('/api/organizations')
-        .then(response => response.json())
-        .then(organizations => {
-            orgSelects.forEach(select => {
-                organizations.forEach(org => {
-                    const option = document.createElement('option');
-                    option.value = org.id;
-                    option.textContent = org.name;
-                    select.appendChild(option);
+    function showError(message) {
+        errorContainer.textContent = message;
+        errorContainer.style.display = 'block';
+    }
+
+    function clearError() {
+        errorContainer.textContent = '';
+        errorContainer.style.display = 'none';
+    }
+
+    function fetchAllOrganizations() {
+        clearError();
+        fetch('http://localhost:3001/api/organizations')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                const { organizations } = data;
+                if (organizations.length === 0) {
+                    showError('No organizations found for your account. Please check your GitHub token and permissions.');
+                }
+
+                orgSelects.forEach(select => {
+                    select.innerHTML = '<option value="">Select an organization</option>';
+                    organizations.forEach(org => {
+                        const option = document.createElement('option');
+                        option.value = org.id;
+                        option.textContent = org.name;
+                        select.appendChild(option);
+                    });
                 });
+            })
+            .catch(error => {
+                console.error('Error fetching organizations:', error);
+                showError(`Failed to load organizations: ${error.message}`);
             });
-        });
+    }
 
-    // Load repositories when an organization is selected
+    fetchAllOrganizations();
+
     orgSelects.forEach(select => {
         select.addEventListener('change', (event) => {
-            const orgId = event.target.value;
-            const column = event.target.closest('.column');
-            loadRepositories(orgId, column);
+            const selectedValue = event.target.value;
+            if (selectedValue) {
+                const column = event.target.closest('.column');
+                loadRepositories(selectedValue, column);
+            }
         });
     });
 
     function loadRepositories(orgId, column) {
-        fetch(`/api/repositories?org=${orgId}`)
-            .then(response => response.json())
+        clearError();
+        fetch(`http://localhost:3001/api/repositories?org=${orgId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(repositories => {
+                if (repositories.error) {
+                    throw new Error(repositories.error);
+                }
                 const repoList = column.querySelector('.repo-list');
                 repoList.innerHTML = '';
                 repositories.forEach(repo => {
                     const repoBlock = document.createElement('div');
                     repoBlock.className = 'repo-block';
-                    repoBlock.textContent = repo.name;
                     repoBlock.draggable = true;
                     repoBlock.dataset.repoId = repo.id;
+                    repoBlock.dataset.repoName = repo.name;
+                    repoBlock.dataset.repoUrl = repo.html_url;
+                    
+                    const repoName = document.createElement('div');
+                    repoName.className = 'repo-name';
+                    repoName.textContent = repo.name;
+                    
+                    const repoUrl = document.createElement('div');
+                    repoUrl.className = 'repo-url';
+                    repoUrl.textContent = repo.html_url;
+                    
+                    repoBlock.appendChild(repoName);
+                    repoBlock.appendChild(repoUrl);
                     repoList.appendChild(repoBlock);
                 });
+                setupDragAndDrop();
+            })
+            .catch(error => {
+                console.error('Error fetching repositories:', error);
+                showError(`Failed to load repositories: ${error.message}`);
             });
     }
 
-    // Implement drag and drop
-    columns.forEach(column => {
-        column.addEventListener('dragover', (e) => {
-            e.preventDefault();
+    function setupDragAndDrop() {
+        const draggables = document.querySelectorAll('.repo-block');
+        const dropZones = document.querySelectorAll('.repo-list');
+
+        draggables.forEach(draggable => {
+            draggable.addEventListener('dragstart', () => {
+                draggable.classList.add('dragging');
+            });
+
+            draggable.addEventListener('dragend', () => {
+                draggable.classList.remove('dragging');
+            });
         });
 
-        column.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const repoId = e.dataTransfer.getData('text/plain');
-            const sourceColumn = document.querySelector(`[data-repo-id="${repoId}"]`).closest('.column');
-            const targetColumn = e.target.closest('.column');
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(zone, e.clientY);
+                const draggable = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    zone.appendChild(draggable);
+                } else {
+                    zone.insertBefore(draggable, afterElement);
+                }
+            });
 
-            if (sourceColumn !== targetColumn) {
-                moveRepository(repoId, sourceColumn.querySelector('select').value, targetColumn.querySelector('select').value);
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                const draggable = document.querySelector('.dragging');
+                const sourceColumn = draggable.closest('.column');
+                const targetColumn = zone.closest('.column');
+                
+                if (sourceColumn !== targetColumn) {
+                    const repoId = draggable.dataset.repoId;
+                    const sourceOrgId = sourceColumn.querySelector('select').value;
+                    const targetOrgId = targetColumn.querySelector('select').value;
+                    moveRepository(repoId, sourceOrgId, targetOrgId);
+                }
+            });
+        });
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.repo-block:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
             }
-        });
-    });
-
-    document.addEventListener('dragstart', (e) => {
-        if (e.target.classList.contains('repo-block')) {
-            e.dataTransfer.setData('text/plain', e.target.dataset.repoId);
-        }
-    });
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
 
     function moveRepository(repoId, sourceOrgId, targetOrgId) {
-        fetch('/api/move-repository', {
+        clearError();
+        fetch('http://localhost:3001/api/move-repository', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -78,15 +175,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 targetOrgId: targetOrgId
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(result => {
             if (result.success) {
-                // Refresh repository lists
+                console.log('Repository moved successfully');
+                // Refresh the repository lists for both source and target organizations
                 loadRepositories(sourceOrgId, document.querySelector(`select[value="${sourceOrgId}"]`).closest('.column'));
                 loadRepositories(targetOrgId, document.querySelector(`select[value="${targetOrgId}"]`).closest('.column'));
             } else {
-                alert('Failed to move repository: ' + result.message);
+                throw new Error(result.message || 'Failed to move repository');
             }
+        })
+        .catch(error => {
+            console.error('Error moving repository:', error);
+            showError(`Failed to move repository: ${error.message}`);
         });
     }
 });

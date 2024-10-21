@@ -16,7 +16,7 @@ def list_repositories(org):
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         repos = response.json()
-        return [{'id': repo['id'], 'name': repo['name']} for repo in repos]
+        return [{'id': repo['id'], 'name': repo['name'], 'html_url': repo['html_url']} for repo in repos]
     else:
         return []
 

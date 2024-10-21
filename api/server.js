@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 
 const app = express();
 app.use(cors());
@@ -53,14 +53,35 @@ app.get('/api/repositories', (req, res) => {
 app.post('/api/move-repository', (req, res) => {
   const { repoId, sourceOrgId, targetOrgId } = req.body;
   if (!repoId || !sourceOrgId || !targetOrgId) {
-    return res.status(400).json({ error: 'Missing required parameters' });
+    return res.status(400).json({ success: false, message: 'Missing required parameters' });
   }
 
   const scriptPath = path.join(SCRIPTS_DIR, 'move_repository.py');
-  exec(`python ${scriptPath} ${repoId} ${sourceOrgId} ${targetOrgId}`, (error, stdout, stderr) => {
+  execFile('python', [scriptPath, repoId, sourceOrgId, targetOrgId], (error, stdout, stderr) => {
     if (error) {
       console.error(`Error executing script: ${error}`);
-      return res.status(500).json({ error: 'Failed to move repository' });
+      return res.status(500).json({ success: false, message: 'Failed to move repository' });
+    }
+    if (stderr) {
+      console.error(`Script error: ${stderr}`);
+      return res.status(500).json({ success: false, message: 'Script error occurred' });
+    }
+    try {
+      const result = JSON.parse(stdout);
+      res.json(result);
+    } catch (parseError) {
+      console.error(`Error parsing script output: ${parseError}`);
+      res.status(500).json({ success: false, message: 'Failed to parse move result' });
+    }
+  });
+});
+
+app.get('/api/organizations', (req, res) => {
+  const scriptPath = path.join(SCRIPTS_DIR, 'list_organizations.py');
+  execFile('python', [scriptPath], (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error executing script: ${error}`);
+      return res.status(500).json({ error: 'Failed to list organizations' });
     }
     if (stderr) {
       console.error(`Script error: ${stderr}`);
@@ -68,10 +89,14 @@ app.post('/api/move-repository', (req, res) => {
     }
     try {
       const result = JSON.parse(stdout);
+      if (result.error) {
+        console.error(`Error from script: ${result.error}`);
+        return res.status(500).json({ error: result.error });
+      }
       res.json(result);
     } catch (parseError) {
       console.error(`Error parsing script output: ${parseError}`);
-      res.status(500).json({ error: 'Failed to parse move result' });
+      res.status(500).json({ error: 'Failed to parse organization list' });
     }
   });
 });

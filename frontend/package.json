@@ -37,9 +37,9 @@
     ]
   },
   "devDependencies": {
-    "jest": "^27.5.1",
+    "jest": "^27.0.6",
     "jest-puppeteer": "^6.2.0",
-    "puppeteer": "^13.7.0",
+    "puppeteer": "^10.2.0",
     "http-server": "^14.1.0"
   },
   "jest": {

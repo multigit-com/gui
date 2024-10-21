@@ -30,11 +30,11 @@ def move_repository(repo_id, source_org, target_org):
     if transfer_response.status_code == 202:
         return {'success': True, 'message': f'Repository {repo_name} moved successfully'}
     else:
-        return {'success': False, 'message': 'Failed to move repository'}
+        return {'success': False, 'message': f'Failed to move repository. Status: {transfer_response.status_code}'}
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        print(json.dumps({'error': 'Required parameters: repo_id, source_org, target_org'}))
+        print(json.dumps({'success': False, 'message': 'Required parameters: repo_id, source_org, target_org'}))
     else:
         repo_id, source_org, target_org = sys.argv[1], sys.argv[2], sys.argv[3]
         result = move_repository(repo_id, source_org, target_org)
