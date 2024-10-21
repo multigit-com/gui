@@ -2,14 +2,13 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import logging
-import sqlite3
 import time
 from dotenv import load_dotenv
+from utils.database import init_db, cache_organizations, cache_repositories, get_cached_organizations, get_cached_repositories
+from utils.github_api import update_all_organizations, list_repositories
 from scripts.list_repository_files import list_repository_files
 from scripts.move_repository import move_repository
 from scripts.remove_repository_from_github_by_url_repo import remove_repository_from_github_by_url_repo
-from scripts.list_organizations import list_all_organizations
-from scripts.list_repositories import list_repositories
 from scripts.get_readme import get_readme_content
 from scripts.rename_organization import rename_organization_script
 from scripts.rename_repository import rename_repository_script
@@ -21,80 +20,51 @@ CORS(app)
 
 logging.basicConfig(level=logging.INFO)
 
-# SQLite setup
-DB_PATH = os.getenv('DB_PATH', 'github_cache.db')
-ORGANIZATIONS_TABLE = os.getenv('ORGANIZATIONS_TABLE', 'organizations')
-REPOSITORIES_TABLE = os.getenv('REPOSITORIES_TABLE', 'repositories')
 CACHE_DURATION = int(os.getenv('CACHE_DURATION', 300))
-
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(f'''CREATE TABLE IF NOT EXISTS {ORGANIZATIONS_TABLE}
-                 (id INTEGER PRIMARY KEY, name TEXT, login TEXT, original_name TEXT, custom_name TEXT,
-                  public_repos INTEGER, private_repos INTEGER, forked_repos INTEGER, total_repos INTEGER,
-                  last_updated INTEGER)''')
-    c.execute(f'''CREATE TABLE IF NOT EXISTS {REPOSITORIES_TABLE}
-                 (id INTEGER PRIMARY KEY, name TEXT, org TEXT, html_url TEXT, description TEXT, last_updated INTEGER)''')
-    conn.commit()
-    conn.close()
 
 init_db()
 
-def cache_organizations(organizations):
-    current_time = int(time.time())
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    
-    # Get the current table structure
-    c.execute(f'PRAGMA table_info({ORGANIZATIONS_TABLE})')
-    columns = [column[1] for column in c.fetchall()]
-    
-    # Prepare the SQL query
-    placeholders = ', '.join(['?' for _ in columns])
-    sql = f'INSERT OR REPLACE INTO {ORGANIZATIONS_TABLE} ({", ".join(columns)}) VALUES ({placeholders})'
-    
-    # Prepare the data
-    data = []
-    for org in organizations:
-        row = [org.get(column, None) for column in columns]
-        data.append(tuple(row))
-    
-    # Execute the query
-    c.executemany(sql, data)
-    conn.commit()
-    conn.close()
+@app.route('/api/organizations', methods=['GET'])
+def get_organizations():
+    try:
+        cached_orgs = get_cached_organizations()
+        current_time = int(time.time())
+        
+        if not cached_orgs or (current_time - cached_orgs[0]['last_updated'] >= CACHE_DURATION):
+            for org_list in update_all_organizations():
+                cache_organizations(org_list)
+            cached_orgs = get_cached_organizations()
+        
+        return jsonify({"organizations": cached_orgs})
+    except Exception as e:
+        app.logger.error(f"Error fetching organizations: {str(e)}", exc_info=True)
+        return jsonify({"error": "Failed to fetch organizations", "details": str(e)}), 500
 
-def cache_repositories(org, repositories):
-    current_time = int(time.time())
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.executemany(f'INSERT OR REPLACE INTO {REPOSITORIES_TABLE} VALUES (?, ?, ?, ?, ?, ?)',
-                  [(repo['id'], repo['name'], org, repo['html_url'], repo.get('description', ''), current_time) for repo in repositories])
-    conn.commit()
-    conn.close()
-
-def get_cached_organizations():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(f'SELECT * FROM {ORGANIZATIONS_TABLE}')
-    columns = [column[0] for column in c.description]
-    orgs = []
-    for row in c.fetchall():
-        org = {}
-        for i, column in enumerate(columns):
-            org[column] = row[i]
-        orgs.append(org)
-    conn.close()
-    return orgs
-
-def get_cached_repositories(org):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute(f'SELECT * FROM {REPOSITORIES_TABLE} WHERE org = ?', (org,))
-    repos = [{'id': row[0], 'name': row[1], 'org': row[2], 'html_url': row[3], 'description': row[4], 'last_updated': row[5]} for row in c.fetchall()]
-    conn.close()
-    return repos
+@app.route('/api/repositories', methods=['GET'])
+def get_repositories():
+    org = request.args.get('org')
+    app.logger.info(f"Received request for repositories of org: {org}")
+    if not org:
+        app.logger.error("Organization parameter is missing")
+        return jsonify({"error": "Organization parameter is required"}), 400
+    
+    try:
+        cached_repos = get_cached_repositories(org)
+        current_time = int(time.time())
+        if cached_repos and (current_time - cached_repos[0]['last_updated'] < CACHE_DURATION):
+            return jsonify(cached_repos)
+        
+        app.logger.info(f"Fetching repositories for org: {org}")
+        repos = list_repositories(org)
+        cache_repositories(org, repos)
+        app.logger.info(f"Found {len(repos)} repositories")
+        return jsonify(repos)
+    except Exception as e:
+        app.logger.error(f"Error fetching repositories: {str(e)}")
+        cached_repos = get_cached_repositories(org)
+        if cached_repos:
+            return jsonify(cached_repos)
+        return jsonify({"error": "Failed to fetch repositories", "details": str(e)}), 500
 
 @app.route('/api/repository-files', methods=['GET'])
 def get_repository_files():
@@ -136,51 +106,6 @@ def get_readme():
     except Exception as e:
         app.logger.error(f"Error fetching README: {str(e)}", exc_info=True)
         return jsonify({"error": "Failed to fetch README", "details": str(e)}), 500
-
-@app.route('/api/organizations', methods=['GET'])
-def get_organizations():
-    try:
-        cached_orgs = get_cached_organizations()
-        current_time = int(time.time())
-        if cached_orgs and (current_time - cached_orgs[0]['last_updated'] < CACHE_DURATION):
-            return jsonify({"organizations": cached_orgs})
-        
-        organizations = list_all_organizations()
-        app.logger.info(f"Fetched organizations: {organizations}")
-        cache_organizations(organizations['organizations'])
-        return jsonify(organizations)
-    except Exception as e:
-        app.logger.error(f"Error fetching organizations: {str(e)}", exc_info=True)
-        cached_orgs = get_cached_organizations()
-        if cached_orgs:
-            return jsonify({"organizations": cached_orgs})
-        return jsonify({"error": "Failed to fetch organizations", "details": str(e)}), 500
-
-@app.route('/api/repositories', methods=['GET'])
-def get_repositories():
-    org = request.args.get('org')
-    app.logger.info(f"Received request for repositories of org: {org}")
-    if not org:
-        app.logger.error("Organization parameter is missing")
-        return jsonify({"error": "Organization parameter is required"}), 400
-    
-    try:
-        cached_repos = get_cached_repositories(org)
-        current_time = int(time.time())
-        if cached_repos and (current_time - cached_repos[0]['last_updated'] < CACHE_DURATION):
-            return jsonify(cached_repos)
-        
-        app.logger.info(f"Fetching repositories for org: {org}")
-        repos = list_repositories(org)
-        cache_repositories(org, repos)
-        app.logger.info(f"Found {len(repos)} repositories")
-        return jsonify(repos)
-    except Exception as e:
-        app.logger.error(f"Error fetching repositories: {str(e)}")
-        cached_repos = get_cached_repositories(org)
-        if cached_repos:
-            return jsonify(cached_repos)
-        return jsonify({"error": "Failed to fetch repositories", "details": str(e)}), 500
 
 @app.route('/api/move-repository', methods=['POST'])
 def move_repo():

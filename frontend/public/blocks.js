@@ -28,7 +28,7 @@ function populateOrganizationSelects(organizations) {
     organizations.forEach(org => {
       const option = document.createElement('option');
       option.value = org.id;
-      option.textContent = `${org.name} (Public: ${org.public_repos}, Private: ${org.private_repos}, Forked: ${org.forked_repos}, Total: ${org.total_repos})`;
+      option.textContent = `${org.login} (Public: ${org.public_repos}, Private: ${org.private_repos}, Forked: ${org.forked_repos}, Total: ${org.total_repos})`;
       select.appendChild(option);
     });
 
@@ -251,7 +251,7 @@ function moveRepository(data, draggable, targetOrgId, zone) {
         console.log('Repository is already being moved');
         return;
     }
-    
+
     draggable.dataset.isMoving = 'true';
     const sourceOrgId = data.sourceOrgId;
     const repoId = data.repoId;

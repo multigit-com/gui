@@ -26,32 +26,32 @@ function fetchOrganizations() {
 function createOrgItem(org) {
     const orgItem = document.createElement('div');
     orgItem.className = 'org-item';
-    
+
     const orgLink = document.createElement('a');
     orgLink.href = `https://github.com/${org.login}`;
-    orgLink.textContent = org.login || org.name || 'Unknown';
+    orgLink.textContent = org.login || 'Unknown';
     orgLink.target = '_blank';
     orgLink.rel = 'noopener noreferrer';
     orgItem.appendChild(orgLink);
-    
+
     const input = document.createElement('input');
-    input.value = org.login || org.name || 'Unknown';
-    input.dataset.originalName = org.login || org.name || 'Unknown';
+    input.value = org.login || 'Unknown';
+    input.dataset.originalName = org.login || 'Unknown';
     input.dataset.orgId = org.id || '';
-    
+
     const renameButton = document.createElement('button');
     renameButton.textContent = 'Rename';
     renameButton.onclick = () => renameOrganization(input.dataset.orgId, input.value);
-    
+
     const showReposButton = document.createElement('button');
     showReposButton.textContent = 'Show Repos';
     showReposButton.onclick = () => fetchRepositories(input.dataset.originalName);
-    
+
     orgItem.appendChild(document.createElement('br'));
     orgItem.appendChild(input);
     orgItem.appendChild(renameButton);
     orgItem.appendChild(showReposButton);
-    
+
     return orgItem;
 }
 
@@ -108,26 +108,26 @@ function fetchRepositories(orgName) {
 function createRepoItem(repo, orgName) {
     const repoItem = document.createElement('div');
     repoItem.className = 'repo-item';
-    
+
     const repoLink = document.createElement('a');
     repoLink.href = repo.html_url || `https://github.com/${orgName}/${repo.name}`;
     repoLink.textContent = repo.name || 'Unknown';
     repoLink.target = '_blank';
     repoLink.rel = 'noopener noreferrer';
     repoItem.appendChild(repoLink);
-    
+
     const input = document.createElement('input');
     input.value = repo.name || 'Unknown';
     input.dataset.originalName = repo.name || 'Unknown';
-    
+
     const renameButton = document.createElement('button');
     renameButton.textContent = 'Rename';
     renameButton.onclick = () => renameRepository(orgName, input.dataset.originalName, input.value);
-    
+
     repoItem.appendChild(document.createElement('br'));
     repoItem.appendChild(input);
     repoItem.appendChild(renameButton);
-    
+
     return repoItem;
 }
 

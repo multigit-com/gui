@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
+const proxyRequest = require('./utils/proxyRequest');
 
 const app = express();
 app.use(cors());
@@ -8,66 +8,33 @@ app.use(express.json());
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 
-// Proxy middleware function
-const proxyRequest = async (req, res, endpoint) => {
-  const maxRetries = 3;
-  let retries = 0;
-
-  while (retries < maxRetries) {
-    try {
-      const response = await axios({
-        method: req.method,
-        url: `${BACKEND_URL}${endpoint}`,
-        params: req.query,
-        data: req.body,
-      });
-      return res.json(response.data);
-    } catch (error) {
-      if (error.response && error.response.status === 403 && error.response.data.message.includes('API rate limit exceeded')) {
-        retries++;
-        console.log(`Rate limit exceeded. Retrying in ${2 ** retries} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** retries)));
-      } else {
-        console.error(`Error in ${endpoint}:`, error.response ? error.response.data : error.message);
-        return res.status(error.response ? error.response.status : 500).json({ 
-          error: `Failed to ${req.method} ${endpoint}`, 
-          details: error.response ? error.response.data : error.message 
-        });
-      }
-    }
-  }
-
-  console.error(`Failed after ${maxRetries} retries`);
-  res.status(429).json({ error: 'Rate limit exceeded. Please try again later.' });
-};
-
 // Repository files
-app.get('/api/repository-files', (req, res) => proxyRequest(req, res, '/api/repository-files'));
+app.get('/api/repository-files', (req, res) => proxyRequest(req, res, '/api/repository-files', BACKEND_URL));
 
 // Organizations
-app.get('/api/organizations', (req, res) => proxyRequest(req, res, '/api/organizations'));
+app.get('/api/organizations', (req, res) => proxyRequest(req, res, '/api/organizations', BACKEND_URL));
 
 // Move repository
-app.post('/api/move-repository', (req, res) => proxyRequest(req, res, '/api/move-repository'));
+app.post('/api/move-repository', (req, res) => proxyRequest(req, res, '/api/move-repository', BACKEND_URL));
 
 // Remove repository
-app.post('/api/remove-repository', (req, res) => proxyRequest(req, res, '/api/remove-repository'));
+app.post('/api/remove-repository', (req, res) => proxyRequest(req, res, '/api/remove-repository', BACKEND_URL));
 
 // Repositories
-app.get('/api/repositories', (req, res) => proxyRequest(req, res, '/api/repositories'));
+app.get('/api/repositories', (req, res) => proxyRequest(req, res, '/api/repositories', BACKEND_URL));
 
 // README
-app.get('/api/readme', (req, res) => proxyRequest(req, res, '/api/readme'));
+app.get('/api/readme', (req, res) => proxyRequest(req, res, '/api/readme', BACKEND_URL));
 
 // Set repo
-app.post('/api/repo', (req, res) => proxyRequest(req, res, '/api/repo'));
+app.post('/api/repo', (req, res) => proxyRequest(req, res, '/api/repo', BACKEND_URL));
 
 // Get repo
-app.get('/api/repo', (req, res) => proxyRequest(req, res, '/api/repo'));
+app.get('/api/repo', (req, res) => proxyRequest(req, res, '/api/repo', BACKEND_URL));
 
 // New routes for renaming
-app.post('/api/rename-organization', (req, res) => proxyRequest(req, res, '/api/rename-organization'));
-app.post('/api/rename-repository', (req, res) => proxyRequest(req, res, '/api/rename-repository'));
+app.post('/api/rename-organization', (req, res) => proxyRequest(req, res, '/api/rename-organization', BACKEND_URL));
+app.post('/api/rename-repository', (req, res) => proxyRequest(req, res, '/api/rename-repository', BACKEND_URL));
 
 function startServer(port) {
   app.listen(port, () => {

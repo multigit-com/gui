@@ -8,30 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Comprehensive TEST.md guide for running all types of tests
-- New `run_all_tests.sh` bash script to execute all tests in sequence
-- New Ansible playbook for comprehensive API testing
-- Tests for new endpoints: rename organization, rename repository, and remove organization
-- Updated run_tests.yml to include new API tests
-- Moved curl_tests.sh to curl/backend directory
-- Updated curl_tests.sh to use environment variables
-- Added new environment variables for curl tests in .env file
-- New curl_tests.sh script for comprehensive API testing
-- Automatic cache update after removing a repository or organization
-- New endpoint to remove an organization and all its repositories
-- Improved error handling and logging for removal operations
-
 ### Changed
-- Updated remove repository functionality to refresh organization and repository data
-- Enhanced database caching mechanism to reflect real-time changes
-- Extended curl tests to cover all major API endpoints
-- Refactored curl tests to use environment variables for better configurability and security
-- Modified `run_all_tests.sh` to use absolute paths, fixing directory change issues
+- Removed 'original_name' and 'custom_name' columns from the organizations table in the database
+- Updated organization listing and caching functions to reflect the removed columns
+- Modified database schema for organizations table
+
+### Added
+- Sorting functionality for organizations by name in the database query
 
 ### Fixed
-- Issue with database column mismatch in `get_cached_organizations` function
-- Fixed "cd: too many arguments" error in `run_all_tests.sh` script
+- Issues with multiple API requests for the same data
+- Improved handling of GitHub API rate limits
+- Resolved issue with database column mismatch in organization caching
+- Updated database schema to match current organization data structure
+
+
+## [0.8.0] - 2024-10-25
 
 ### Added
 - Enhanced organization information in API response, including original name and custom name
@@ -67,7 +59,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error related to repository transfer API usage
 - Various minor bug fixes and performance improvements
 
+### Changed
+- Refactored backend code to separate utility functions into `utils/database.py` and `utils/github_api.py`
+- Refactored API server code to separate proxy request function into `utils/proxyRequest.js`
+- Improved code organization and maintainability
 
+
+
+## [0.7.0] - 2024-10-25
+
+### Added
+- New rename.html page for renaming organizations and repositories
+- API endpoints for renaming organizations and repositories
+- Clickable links for organization and repository names in rename.html
+- Error handling and display in rename.html
+- Ability to view repositories for a selected organization in rename.html
+
+### Changed
+- Updated frontend code to use 'name' instead of 'login' for organization display and operations
+- Modified database queries to use 'name' column instead of 'login' for organization/user name from GitHub
+- Updated sorting of organizations to use the 'name' column in the database query
+- Improved error handling and user feedback across the application
+
+### Fixed
+- Issues with multiple API requests for the same data
+- Improved handling of GitHub API rate limits
+- Resolved issue with database column mismatch in organization caching
+- Updated database schema to match current organization data structure
 
 ## [0.6.0] - 2024-10-24
 
@@ -186,6 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - N/A
+
 
 
 
