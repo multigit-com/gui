@@ -1,33 +1,32 @@
+import logging
+from github import Github
 import os
-import requests
 import base64
-from dotenv import load_dotenv
 
-load_dotenv()
-
-def get_readme_content(repo):
+def get_readme_content(org, repo):
     github_token = os.getenv('GITHUB_TOKEN')
     if not github_token:
-        raise ValueError("GITHUB_TOKEN is not set in the environment variables")
+        logging.error("GITHUB_TOKEN environment variable is not set")
+        raise ValueError("GITHUB_TOKEN environment variable is not set")
 
-    headers = {
-        'Authorization': f'token {github_token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
-    
-    url = f'https://api.github.com/repos/{repo}/readme'
-    response = requests.get(url, headers=headers)
-    
-    if response.status_code == 200:
-        content = response.json()['content']
-        return base64.b64decode(content).decode('utf-8')
-    else:
-        raise Exception(f"Failed to fetch README. Status code: {response.status_code}, Response: {response.text}")
+    g = Github(github_token)
+    try:
+        logging.info(f"Attempting to fetch repo: {org}/{repo}")
+        repository = g.get_repo(f"{org}/{repo}")
+        logging.info(f"Fetching README for repo: {repository.full_name}")
+        readme = repository.get_readme()
+        content = base64.b64decode(readme.content).decode('utf-8')
+        logging.info(f"README fetched successfully. Length: {len(content)}")
+        return content
+    except Exception as e:
+        logging.error(f"Error fetching README: {str(e)}", exc_info=True)
+        raise
 
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) != 2:
-        print("Usage: python get_readme.py <owner/repo>")
+    if len(sys.argv) != 3:
+        print("Usage: python get_readme.py <owner> <repo>")
     else:
-        repo = sys.argv[1]
-        print(get_readme_content(repo))
+        org = sys.argv[1]
+        repo = sys.argv[2]
+        print(get_readme_content(org, repo))

@@ -61,8 +61,11 @@ function displayRepositories(repositories, column) {
   const repoList = column.querySelector('.repo-list');
   repoList.innerHTML = '';
   repositories.forEach(repo => {
+    repo.name = getRepoNameFromUrl(repo.html_url);
+    repo.org = getOrgNameFromUrl(repo.html_url);
     const repoBlock = createRepoBlock(repo);
     repoList.appendChild(repoBlock);
+    fetchRepoDetails(repo.org, repo.name, repoBlock);
   });
   setupDragAndDrop();
 }
@@ -73,12 +76,30 @@ function createRepoBlock(repo) {
   repoBlock.draggable = true;
   repoBlock.dataset.repoId = repo.id;
   repoBlock.dataset.repoName = repo.name;
+  repoBlock.dataset.orgName = repo.org;
   repoBlock.dataset.repoUrl = repo.html_url;
-  
-  const repoName = document.createElement('div');
+
+  const repoHeader = document.createElement('div');
+  repoHeader.className = 'repo-header';
+
+  const repoName = document.createElement('a');  // Changed to anchor tag
   repoName.className = 'repo-name';
   repoName.textContent = repo.name;
-  
+  repoName.href = repo.html_url;  // Set the href to the repo URL
+  repoName.target = '_blank';  // Open in new tab
+  repoName.rel = 'noopener noreferrer';  // Security best practice for links opening in new tabs
+
+  const removeButton = document.createElement('button');
+  removeButton.className = 'remove-repo-btn';
+  removeButton.textContent = '[-]';
+  removeButton.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent triggering the repo block click event
+    removeRepository(repo);
+  });
+
+  repoHeader.appendChild(repoName);
+  repoHeader.appendChild(removeButton);
+
   const repoUrl = document.createElement('div');
   repoUrl.className = 'repo-url';
   repoUrl.textContent = repo.html_url;
@@ -89,87 +110,84 @@ function createRepoBlock(repo) {
   const readmePreview = document.createElement('div');
   readmePreview.className = 'readme-preview';
 
-  repoBlock.appendChild(repoName);
+  repoBlock.appendChild(repoHeader);
   repoBlock.appendChild(repoUrl);
   repoBlock.appendChild(fileList);
   repoBlock.appendChild(readmePreview);
 
-  repoBlock.addEventListener('mouseenter', () => {
-    fetchRepoFiles(repo.name, fileList);
-    fetchReadmePreview(repo.name, readmePreview);
-  });
-
-  repoBlock.addEventListener('mouseleave', () => {
-    fileList.style.display = 'none';
-    readmePreview.style.display = 'none';
-  });
-
-  repoBlock.addEventListener('click', () => {
-    window.open(repo.html_url, '_blank');
+  repoBlock.addEventListener('click', (e) => {
+    // Only toggle expansion if the click is not on the repo name link
+    if (!e.target.classList.contains('repo-name')) {
+      repoBlock.classList.toggle('expanded');
+    }
   });
 
   return repoBlock;
 }
 
-function fetchRepoFiles(repoUrl, fileListElement) {
-    const encodedRepoUrl = encodeURIComponent(repoUrl);
-    fetch(`${API_BASE_URL}/api/repository-files?url=${encodedRepoUrl}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            if (!data.files) {
-                throw new Error('No files data received');
-            }
-            fileListElement.innerHTML = '<h3>Files:</h3>';
-            const ul = document.createElement('ul');
-            data.files.forEach(file => {
-                const li = document.createElement('li');
-                li.textContent = `${file.name} (${formatFileSize(file.size)})`;
-                ul.appendChild(li);
-            });
-            fileListElement.appendChild(ul);
-            fileListElement.style.display = 'block';
-        })
-        .catch(error => {
-            console.error('Error fetching repository files:', error);
-            fileListElement.innerHTML = `<p>Error fetching files: ${error.message}</p>`;
-            fileListElement.style.display = 'block';
-        });
+function fetchRepoDetails(orgName, repoName, repoBlock) {
+  fetchRepoFiles(orgName, repoName, repoBlock.querySelector('.file-list'));
+  fetchReadmePreview(orgName, repoName, repoBlock.querySelector('.readme-preview'));
 }
 
-function fetchReadmePreview(repoUrl, readmeElement) {
-    const encodedRepoUrl = encodeURIComponent(repoUrl);
-    fetch(`${API_BASE_URL}/api/readme?url=${encodedRepoUrl}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            if (data.content) {
-                readmeElement.innerHTML = '<h3>README Preview:</h3>' + marked(data.content);
-                readmeElement.style.display = 'block';
-            } else {
-                readmeElement.innerHTML = '<p>No README content available</p>';
-                readmeElement.style.display = 'block';
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching README:', error);
-            readmeElement.innerHTML = `<p>Error fetching README: ${error.message}</p>`;
-            readmeElement.style.display = 'block';
-        });
+function fetchRepoFiles(orgName, repoName, fileListElement) {
+  fetch(`${API_BASE_URL}/api/repository-files?org=${orgName}&repo=${repoName}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      if (!data.files) {
+        throw new Error('No files data received');
+      }
+      // fileListElement.innerHTML = '<h3>Files:</h3>';
+      fileListElement.innerHTML = '';
+      const ul = document.createElement('ul');
+      data.files.forEach(file => {
+        const li = document.createElement('li');
+        li.textContent = `${file.name} (${formatFileSize(file.size)})`;
+        ul.appendChild(li);
+      });
+      fileListElement.appendChild(ul);
+      fileListElement.style.display = 'block';
+    })
+    .catch(error => {
+      console.error('Error fetching repository files:', error);
+      fileListElement.innerHTML = `<p>Error fetching files: ${error.message}</p>`;
+    });
+}
+
+function fetchReadmePreview(org, repoName, readmeElement) {
+  fetch(`${API_BASE_URL}/api/readme?org=${org}&repo=${repoName}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      if (data.content) {
+        const readmeContent = marked(data.content);
+        readmeElement.innerHTML =
+            // '<h3>README Preview:</h3>' +
+          `<div class="readme-content">${readmeContent}</div>`;
+      } else {
+        readmeElement.innerHTML = '<p>No README content available</p>';
+      }
+      readmeElement.style.display = 'block';
+    })
+    .catch(error => {
+      console.error('Error fetching README:', error);
+      readmeElement.innerHTML = `<p>Error fetching README: ${error.message}</p>`;
+    });
 }
 
 function formatFileSize(bytes) {
@@ -212,7 +230,7 @@ function setupDragAndDrop() {
       const draggable = document.querySelector(`.repo-block[data-repo-id="${data.repoId}"]`);
       const sourceColumn = draggable.closest('.column');
       const targetColumn = zone.closest('.column');
-      
+
       if (sourceColumn !== targetColumn) {
         if (targetColumn.id === 'trash-column') {
           removeRepository(data, draggable);
@@ -225,59 +243,63 @@ function setupDragAndDrop() {
   });
 }
 
-function moveRepository(repoData, repoBlock, targetOrgId, targetZone) {
-  fetch(`${API_BASE_URL}/api/move-repository`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      repoId: repoData.repoId,
-      sourceOrgId: repoData.sourceOrgId,
-      targetOrgId: targetOrgId
+function moveRepository(data, draggable, targetOrgId, zone) {
+    const sourceOrgId = data.sourceOrgId;
+    const repoId = data.repoId;
+    const repoName = data.repoName;
+
+    fetch(`${API_BASE_URL}/api/move-repository`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            repoId: repoId,
+            repoName: repoName,
+            sourceOrgId: sourceOrgId,
+            targetOrgId: targetOrgId
+        })
     })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      targetZone.appendChild(repoBlock);
-      console.log('Repository moved:', data);
-    } else {
-      console.error('Failed to move repository:', data.message);
-      alert(`Failed to move repository: ${data.message}`);
-    }
-  })
-  .catch(error => {
-    console.error('Error moving repository:', error);
-    alert('Error moving repository. Please try again.');
-  });
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            console.log('Repository moved:', result);
+            zone.appendChild(draggable);
+            draggable.dataset.orgId = targetOrgId;
+        } else {
+            console.error('Failed to move repository:', result.error);
+            alert(`Failed to move repository: ${result.error}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error moving repository:', error);
+        alert('Error moving repository. Please try again.');
+    });
 }
 
-function removeRepository(repoData, repoBlock) {
-  const trashList = document.querySelector('#trash-column .repo-list');
-  const removedRepo = document.createElement('div');
-  removedRepo.className = 'removed-repo';
-  removedRepo.textContent = `${repoData.repoName} (Removing...)`;
-  trashList.appendChild(removedRepo);
-
-  fetch(`${API_BASE_URL}/api/remove-repository`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ repoUrl: repoData.repoUrl })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      repoBlock.remove();
-      removedRepo.textContent = `${repoData.repoName} (Removed: ${new Date().toLocaleString()})`;
-      console.log('Repository removed:', data);
-    } else {
-      removedRepo.textContent = `${repoData.repoName} (Removal failed: ${data.message})`;
-      console.error('Failed to remove repository:', data.message);
-    }
-  })
-  .catch(error => {
-    removedRepo.textContent = `${repoData.repoName} (Removal error)`;
-    console.error('Error removing repository:', error);
-  });
+function removeRepository(repo) {
+  if (confirm(`Are you sure you want to remove the repository "${repo.name}"?`)) {
+    fetch(`${API_BASE_URL}/api/remove-repository`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repoUrl: repo.html_url, sourceOrgId: repo.org })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const repoBlock = document.querySelector(`.repo-block[data-repo-id="${repo.id}"]`);
+        repoBlock.remove();
+        console.log('Repository removed:', data);
+      } else {
+        console.error('Failed to remove repository:', data.message);
+        alert(`Failed to remove repository: ${data.message}`);
+      }
+    })
+    .catch(error => {
+      console.error('Error removing repository:', error);
+      alert('Error removing repository. Please try again.');
+    });
+  }
 }
 
 function showError(message) {

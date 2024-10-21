@@ -1,0 +1,15 @@
+---
+- name: Run backend tests
+  command: pytest
+  args:
+    chdir: /app
+  register: backend_test_result
+
+- name: Display backend test results
+  debug:
+    var: backend_test_result.stdout_lines
+
+- name: Check if backend tests passed
+  fail:
+    msg: "Backend tests failed"
+  when: backend_test_result.rc != 0

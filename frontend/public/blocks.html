@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitHub Repository Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <script src="blocks.js" defer></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,10 +22,14 @@
             justify-content: space-around;
         }
         .column {
-            width: 30%;
-            min-height: 400px;
-            border: 1px solid #ccc;
+            flex: 1;
+            margin: 10px;
             padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        #trashColumn {
+            background-color: #ffcccc;
         }
         .repo-block {
             background-color: #f0f0f0;
@@ -32,11 +38,38 @@
             margin: 5px 0;
             cursor: pointer;
         }
-        .repo-block:hover {
-            background-color: #e0e0e0;
+        .repo-block:not(.expanded) .file-list,
+        .repo-block:not(.expanded) .readme-preview {
+            max-height: 100px;
+            overflow: hidden;
+        }
+        .repo-block.expanded .file-list,
+        .repo-block.expanded .readme-preview {
+            max-height: none;
+        }
+        .file-list, .readme-preview {
+            display: none;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .repo-block.expanded .file-list,
+        .repo-block.expanded .readme-preview {
+            display: block;
+        }
+        .readme-content {
+            max-height: 200px;
+            overflow-y: auto;
         }
         .repo-name {
             font-weight: bold;
+            color: #0366d6;  /* GitHub's link color */
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .repo-name:hover {
+            text-decoration: underline;
         }
         .repo-url {
             font-size: 0.8em;
@@ -45,20 +78,6 @@
         select {
             width: 100%;
             margin-bottom: 10px;
-        }
-        .file-list {
-            display: none;
-            background-color: #f8f8f8;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-top: 10px;
-        }
-        .readme-preview {
-            display: none;
-            background-color: #f8f8f8;
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-top: 10px;
         }
         .trash-column {
             background-color: #ffebee;
@@ -73,6 +92,36 @@
             margin-bottom: 5px;
             border-radius: 3px;
         }
+        .repo-item {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: move;
+        }
+        .repo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .remove-repo-btn {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s;
+        }
+        .remove-repo-btn:hover {
+            background-color: #ff1a1a;
+        }
     </style>
     <script>
         window.API_BASE_URL = 'http://localhost:3001'; // Default value
@@ -84,24 +133,29 @@
     <div class="columns-container">
         <div class="column" id="column1">
             <select class="org-select"></select>
+<!--            <select class="repo-select"></select>-->
             <div class="repo-list"></div>
         </div>
         <div class="column" id="column2">
             <select class="org-select"></select>
+<!--            <select class="repo-select"></select>-->
             <div class="repo-list"></div>
         </div>
         <div class="column" id="column3">
             <select class="org-select"></select>
-            <div class="repo-list"></div>
-        </div>
-        <div class="column trash-column" id="trash-column">
-            <h2>Trash</h2>
+<!--            <select class="repo-select"></select>-->
             <div class="repo-list"></div>
         </div>
     </div>
-    <button onclick="runCurlTests()">Run Curl Tests</button>
-    <button onclick="runAnsibleTests()">Run Ansible Tests</button>
+    <div id="app">
+        <div id="organizationsContainer"></div>
+        <div id="trashColumn" class="column">
+            <h2>Trash</h2>
+            <ul id="trashList"></ul>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.3/marked.min.js"></script>
-    <script src="blocks.js"></script>
+    <script src="githubUrlParser.js"></script>
+
 </body>
 </html>

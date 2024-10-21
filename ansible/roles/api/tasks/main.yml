@@ -1,0 +1,15 @@
+---
+- name: Run API tests
+  command: npm test
+  args:
+    chdir: /app
+  register: api_test_result
+
+- name: Display API test results
+  debug:
+    var: api_test_result.stdout_lines
+
+- name: Check if API tests passed
+  fail:
+    msg: "API tests failed"
+  when: api_test_result.rc != 0

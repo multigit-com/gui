@@ -1,0 +1,10 @@
+---
+- name: Test Backend
+  hosts: backend
+  roles:
+    - backend
+
+- name: Test API
+  hosts: api
+  roles:
+    - api

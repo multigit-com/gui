@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub URL Parser Example</title>
+    <script src="githubUrlParser.js"></script>
+</head>
+<body>
+    <input type="text" id="githubUrl" placeholder="Enter GitHub URL">
+    <p>Organization: <span id="orgName"></span></p>
+    <p>Repository: <span id="repoName"></span></p>
+
+    <script>
+        const input = document.getElementById('githubUrl');
+        const orgSpan = document.getElementById('orgName');
+        const repoSpan = document.getElementById('repoName');
+
+        input.addEventListener('input', function() {
+            const url = this.value;
+            orgSpan.textContent = getOrgNameFromUrl(url) || '';
+            repoSpan.textContent = getRepoNameFromUrl(url) || '';
+        });
+    </script>
+</body>
+</html>

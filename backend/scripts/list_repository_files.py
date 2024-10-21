@@ -1,33 +1,40 @@
+from github import Github
 import os
-import requests
-from dotenv import load_dotenv
+import json
 
-load_dotenv()
-
-def list_repository_files(repo):
+def list_repository_files(org, repo):
     github_token = os.getenv('GITHUB_TOKEN')
     if not github_token:
-        raise ValueError("GITHUB_TOKEN is not set in the environment variables")
+        raise ValueError("GITHUB_TOKEN environment variable is not set")
 
-    headers = {
-        'Authorization': f'token {github_token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
-    
-    # Assuming the repo parameter is in the format "owner/repo"
-    url = f'https://api.github.com/repos/{repo}/contents'
-    response = requests.get(url, headers=headers)
-    
-    if response.status_code == 200:
-        contents = response.json()
-        return [{'name': item['name'], 'size': item['size']} for item in contents if item['type'] == 'file']
-    else:
-        raise Exception(f"Failed to fetch repository contents. Status code: {response.status_code}, Response: {response.text}")
+    g = Github(github_token)
+    try:
+        repository = g.get_repo(f"{org}/{repo}")
+        contents = repository.get_contents("")
+        files = []
+
+        while contents:
+            file_content = contents.pop(0)
+            if file_content.type == "dir":
+                contents.extend(repository.get_contents(file_content.path))
+            else:
+                files.append({
+                    "path": file_content.path,
+                    "size": file_content.size,
+                    "type": file_content.type
+                })
+
+        print(json.dumps(files))  # Print as JSON string
+        return files
+    except Exception as e:
+        print(f"Error listing repository files: {str(e)}")
+        raise
 
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) != 2:
-        print("Usage: python list_repository_files.py <owner/repo>")
+    if len(sys.argv) != 3:
+        print("Usage: python list_repository_files.py <org> <repo>")
     else:
-        repo = sys.argv[1]
-        print(list_repository_files(repo))
+        org = sys.argv[1]
+        repo = sys.argv[2]
+        list_repository_files(org, repo)

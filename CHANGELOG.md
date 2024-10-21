@@ -5,7 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
+
+### Added
+- Repository removal functionality
+- Clickable repository names that open the GitHub page
+- Expanded view for repository details including file list and README content
+
+### Changed
+- Updated UI to show more repository details
+- Improved error handling and user feedback
+- Fixed repository move functionality to correctly transfer repositories between organizations
+
+### Fixed
+- Issue with drag and drop functionality for moving repositories
+- Various minor bug fixes and performance improvements
+
+
+
+## [0.3.0] - 2024-10-21
 
 ### Added
 - Curl tests for API and backend endpoints
@@ -31,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error handling for missing or invalid data in API responses
 - Repository move functionality to use the correct backend script
 
-## [0.2.0] - 2023-05-21
+## [0.2.0] - 2024-10-21
 
 ### Added
 - Drag-and-drop functionality for moving repositories between organizations
