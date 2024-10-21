@@ -31,7 +31,9 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(f'''CREATE TABLE IF NOT EXISTS {ORGANIZATIONS_TABLE}
-                 (id INTEGER PRIMARY KEY, name TEXT, login TEXT, public_repos INTEGER, private_repos INTEGER, forked_repos INTEGER, total_repos INTEGER, forks_count INTEGER, last_updated INTEGER)''')
+                 (id INTEGER PRIMARY KEY, name TEXT, login TEXT, original_name TEXT, custom_name TEXT,
+                  public_repos INTEGER, private_repos INTEGER, forked_repos INTEGER, total_repos INTEGER,
+                  last_updated INTEGER)''')
     c.execute(f'''CREATE TABLE IF NOT EXISTS {REPOSITORIES_TABLE}
                  (id INTEGER PRIMARY KEY, name TEXT, org TEXT, html_url TEXT, description TEXT, last_updated INTEGER)''')
     conn.commit()
@@ -56,7 +58,6 @@ def cache_organizations(organizations):
     data = []
     for org in organizations:
         row = [org.get(column, None) for column in columns]
-        row.append(current_time)  # Add last_updated
         data.append(tuple(row))
     
     # Execute the query
@@ -145,10 +146,11 @@ def get_organizations():
             return jsonify({"organizations": cached_orgs})
         
         organizations = list_all_organizations()
+        app.logger.info(f"Fetched organizations: {organizations}")
         cache_organizations(organizations['organizations'])
         return jsonify(organizations)
     except Exception as e:
-        app.logger.error(f"Error fetching organizations: {str(e)}")
+        app.logger.error(f"Error fetching organizations: {str(e)}", exc_info=True)
         cached_orgs = get_cached_organizations()
         if cached_orgs:
             return jsonify({"organizations": cached_orgs})
