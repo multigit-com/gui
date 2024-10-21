@@ -17,10 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated organization fetching process to be more resilient to failures
 - Modified API to use cached data when updates fail due to network issues
 - Enhanced README fetching to include retry logic
+- Updated react-scripts to version 5.0.1 to resolve webpack-dev-server deprecation warnings
+- Modified frontend Dockerfile to ensure it uses the latest build
 
 ### Fixed
 - Improved handling of connection errors when fetching README content
 - Enhanced error reporting for failed API requests
+- Resolved deprecation warnings related to webpack-dev-server configuration
 
 ## [0.10.0] - 2024-10-27
 

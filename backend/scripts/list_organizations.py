@@ -29,6 +29,8 @@ def list_all_organizations(page=1, per_page=20, max_retries=3, delay=5):
                 private_repos = sum(1 for repo in repos if repo.private)
                 forked_repos = sum(1 for repo in repos if repo.fork)
                 total_repos = public_repos + private_repos
+                if not org.name:
+                    org.name = org.login
 
                 org_list.append({
                     'id': org.id,
@@ -39,7 +41,7 @@ def list_all_organizations(page=1, per_page=20, max_retries=3, delay=5):
                     'forked_repos': forked_repos,
                     'total_repos': total_repos
                 })
-            
+
             has_next_page = len(org_list) == per_page
             return {"organizations": org_list, "has_next_page": has_next_page, "page": page}
         except RateLimitExceededException as e:
