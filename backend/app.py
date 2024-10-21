@@ -8,6 +8,8 @@ from scripts.remove_repository_from_github_by_url_repo import remove_repository_
 from scripts.list_organizations import list_all_organizations
 from scripts.list_repositories import list_repositories  # Make sure you have this script
 from scripts.get_readme import get_readme_content
+from scripts.rename_organization import rename_organization_script
+from scripts.rename_repository import rename_repository_script
 
 app = Flask(__name__)
 CORS(app)
@@ -137,6 +139,37 @@ def get_repo():
     org = os.getenv('GITHUB_ORG', '')
     repo = os.getenv('GITHUB_REPO', '')
     return jsonify({"org": org, "repo": repo})
+
+@app.route('/api/rename-organization', methods=['POST'])
+def rename_organization():
+    data = request.json
+    org_id = data.get('orgId')
+    new_name = data.get('newName')
+    if not org_id or not new_name:
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    try:
+        result = rename_organization_script(org_id, new_name)
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error(f"Error renaming organization: {str(e)}")
+        return jsonify({"error": "Failed to rename organization", "details": str(e)}), 500
+
+@app.route('/api/rename-repository', methods=['POST'])
+def rename_repository():
+    data = request.json
+    org_name = data.get('orgName')
+    old_name = data.get('oldName')
+    new_name = data.get('newName')
+    if not org_name or not old_name or not new_name:
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    try:
+        result = rename_repository_script(org_name, old_name, new_name)
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error(f"Error renaming repository: {str(e)}")
+        return jsonify({"error": "Failed to rename repository", "details": str(e)}), 500
 
 def update_env_file(key, value):
     env_path = os.path.join(os.path.dirname(__file__), '..', '.env')

@@ -51,6 +51,10 @@ app.post('/api/repo', (req, res) => proxyRequest(req, res, '/api/repo'));
 // Get repo
 app.get('/api/repo', (req, res) => proxyRequest(req, res, '/api/repo'));
 
+// New routes for renaming
+app.post('/api/rename-organization', (req, res) => proxyRequest(req, res, '/api/rename-organization'));
+app.post('/api/rename-repository', (req, res) => proxyRequest(req, res, '/api/rename-repository'));
+
 function startServer(port) {
   app.listen(port, () => {
     console.log(`API server running on port ${port}`);

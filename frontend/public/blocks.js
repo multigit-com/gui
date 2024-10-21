@@ -244,6 +244,12 @@ function setupDragAndDrop() {
 }
 
 function moveRepository(data, draggable, targetOrgId, zone) {
+    if (draggable.dataset.isMoving === 'true') {
+        console.log('Repository is already being moved');
+        return;
+    }
+    
+    draggable.dataset.isMoving = 'true';
     const sourceOrgId = data.sourceOrgId;
     const repoId = data.repoId;
     const repoName = data.repoName;
@@ -274,6 +280,9 @@ function moveRepository(data, draggable, targetOrgId, zone) {
     .catch(error => {
         console.error('Error moving repository:', error);
         alert('Error moving repository. Please try again.');
+    })
+    .finally(() => {
+        draggable.dataset.isMoving = 'false';
     });
 }
 

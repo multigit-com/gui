@@ -9,20 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Repository removal functionality
-- Clickable repository names that open the GitHub page
-- Expanded view for repository details including file list and README content
+- New rename.html page for renaming organizations and repositories
+- API endpoints for renaming organizations and repositories
+- Scripts for handling organization and repository renaming
+- Clickable links for organization and repository names in rename.html
+- Error handling and display in rename.html
+- Ability to view repositories for a selected organization in rename.html
 
 ### Changed
-- Updated UI to show more repository details
-- Improved error handling and user feedback
-- Fixed repository move functionality to correctly transfer repositories between organizations
+- Updated UI to show more repository details in blocks.html
+- Improved error handling and user feedback across the application
+- Enhanced the move repository functionality to prevent multiple simultaneous requests
+- Refactored API server (server.js) to use proxy requests for all endpoints
 
 ### Fixed
 - Issue with drag and drop functionality for moving repositories
+- Error related to repository transfer API usage
 - Various minor bug fixes and performance improvements
 
 
+
+## [0.4.0] - 2024-10-22
+
+### Added
+- New rename.html page for renaming organizations and repositories
+- API endpoints for renaming organizations and repositories
+- Scripts for handling organization and repository renaming
+- Clickable links for organization and repository names in rename.html
+- Error handling and display in rename.html
+- Ability to view repositories for a selected organization in rename.html
+
+### Changed
+- Updated UI to show more repository details in blocks.html
+- Improved error handling and user feedback across the application
+- Enhanced the move repository functionality to prevent multiple simultaneous requests
+- Refactored API server (server.js) to use proxy requests for all endpoints
+
+### Fixed
+- Issue with drag and drop functionality for moving repositories
+- Error related to repository transfer API usage
+- Various minor bug fixes and performance improvements
 
 ## [0.3.0] - 2024-10-21
 
