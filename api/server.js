@@ -1,6 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const proxyRequest = require('./utils/proxyRequest');
+const dotenv = require('dotenv');
+
+// Load .env from the root directory
+try{
+  dotenv.config({ path: '.env' });
+} catch {
+  dotenv.config({ path: '../.env' });
+}
 
 const app = express();
 app.use(cors());

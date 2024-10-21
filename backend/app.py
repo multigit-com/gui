@@ -13,7 +13,13 @@ from scripts.get_readme import get_readme_content
 from scripts.rename_organization import rename_organization_script
 from scripts.rename_repository import rename_repository_script
 
-load_dotenv()
+# Load .env from the root directory
+from dotenv import load_dotenv
+
+try:
+    load_dotenv()
+except:
+    load_dotenv(dotenv_path='../.env')
 
 app = Flask(__name__)
 CORS(app)
@@ -31,15 +37,15 @@ def get_organizations():
     try:
         cached_orgs = get_cached_organizations()
         current_time = int(time.time())
-        
+
         if cached_orgs and (current_time - cached_orgs[0]['last_updated'] < CACHE_DURATION):
             return jsonify({"organizations": cached_orgs})
-        
+
         new_orgs = []
         for org_list in update_all_organizations():
             new_orgs.extend(org_list)
             cache_organizations(org_list)
-        
+
         return jsonify({"organizations": new_orgs})
     except Exception as e:
         app.logger.error(f"Error fetching organizations: {str(e)}", exc_info=True)
@@ -55,13 +61,13 @@ def get_repositories():
     if not org:
         app.logger.error("Organization parameter is missing")
         return jsonify({"error": "Organization parameter is required"}), 400
-    
+
     try:
         cached_repos = get_cached_repositories(org)
         current_time = int(time.time())
         if cached_repos and (current_time - cached_repos[0]['last_updated'] < CACHE_DURATION):
             return jsonify(cached_repos)
-        
+
         app.logger.info(f"Fetching repositories for org: {org}")
         repos = list_repositories(org)
         cache_repositories(org, repos)
@@ -82,7 +88,7 @@ def get_repository_files():
     if not org or not repo:
         app.logger.error("Organization or Repository parameter is missing")
         return jsonify({"error": "Both Organization and Repository parameters are required"}), 400
-    
+
     try:
         app.logger.info(f"Fetching files for org: {org}, repo: {repo}")
         files = list_repository_files(org, repo)
@@ -105,7 +111,7 @@ def get_readme():
     if not org or not repo:
         app.logger.error("Organization or Repository parameter is missing")
         return jsonify({"error": "Both Organization and Repository parameters are required"}), 400
-    
+
     try:
         app.logger.info(f"Fetching README for org: {org}, repo: {repo}")
         content = get_readme_content(org, repo)
@@ -144,11 +150,11 @@ def remove_repo():
             # Update the cache for the organization
             org_data = list_all_organizations()
             cache_organizations(org_data['organizations'])
-            
+
             # Update the cache for the repositories of this organization
             repos = list_repositories(source_org_id)
             cache_repositories(source_org_id, repos)
-        
+
         return jsonify(result)
     except Exception as e:
         app.logger.error(f"Error removing repository: {str(e)}")
@@ -161,15 +167,15 @@ def set_repo():
     repo = data.get('repo')
     if not org or not repo:
         return jsonify({"error": "Both 'org' and 'repo' are required"}), 400
-    
+
     # Update the environment variables
     os.environ['GITHUB_ORG'] = org
     os.environ['GITHUB_REPO'] = repo
-    
+
     # Update the .env file
     update_env_file('GITHUB_ORG', org)
     update_env_file('GITHUB_REPO', repo)
-    
+
     return jsonify({"message": "Repository information updated successfully"})
 
 @app.route('/api/repo', methods=['GET'])
@@ -185,7 +191,7 @@ def rename_organization():
     new_name = data.get('newName')
     if not org_id or not new_name:
         return jsonify({"error": "Missing required parameters"}), 400
-    
+
     try:
         result = rename_organization_script(org_id, new_name)
         return jsonify(result)
@@ -201,7 +207,7 @@ def rename_repository():
     new_name = data.get('newName')
     if not org_name or not old_name or not new_name:
         return jsonify({"error": "Missing required parameters"}), 400
-    
+
     try:
         result = rename_repository_script(org_name, old_name, new_name)
         return jsonify(result)
@@ -213,17 +219,17 @@ def update_env_file(key, value):
     env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
     with open(env_path, 'r') as file:
         lines = file.readlines()
-    
+
     updated = False
     for i, line in enumerate(lines):
         if line.startswith(f"{key}="):
             lines[i] = f"{key}={value}\n"
             updated = True
             break
-    
+
     if not updated:
         lines.append(f"{key}={value}\n")
-    
+
     with open(env_path, 'w') as file:
         file.writelines(lines)
 
@@ -241,7 +247,7 @@ def remove_org():
             # Update the cache for all organizations
             org_data = list_all_organizations()
             cache_organizations(org_data['organizations'])
-        
+
         return jsonify(result)
     except Exception as e:
         app.logger.error(f"Error removing organization: {str(e)}")

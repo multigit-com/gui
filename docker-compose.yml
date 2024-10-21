@@ -2,16 +2,25 @@ version: '3.8'
 
 services:
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - REACT_APP_API_URL=${REACT_APP_API_URL}
+        - FRONTEND_HOSTNAME=${FRONTEND_HOSTNAME}
+        - FRONTEND_PORT=${FRONTEND_PORT}
     hostname: ${FRONTEND_HOSTNAME}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     environment:
       - REACT_APP_API_URL=${REACT_APP_API_URL}
+      - HOST=${FRONTEND_HOSTNAME}
+      - PORT=${FRONTEND_PORT}
     env_file:
-      - .env
+      - ./.env
     networks:
       - app-network
+    restart: on-failure
+    pull_policy: always
 
   api:
     build: ./api
@@ -19,11 +28,17 @@ services:
     ports:
       - "${API_PORT}:${API_PORT}"
     environment:
-      - BACKEND_URL=http://backend:5000
+      - BACKEND_URL=http://${BACKEND_HOSTNAME}:${BACKEND_PORT}
     env_file:
-      - .env
+      - ./.env
+    volumes:
+      - ./.env:/.env:ro
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["node", "server.js"]
     networks:
       - app-network
+    restart: on-failure
+    pull_policy: always
 
   backend:
     build: ./backend
@@ -33,9 +48,15 @@ services:
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
     env_file:
-      - .env
+      - ./.env
+    volumes:
+      - ./.env:/.env:ro
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["python", "app.py"]
     networks:
       - app-network
+    restart: on-failure
+    pull_policy: always
 
 networks:
   app-network:

@@ -13,7 +13,7 @@
     "web-vitals": "^1.0.1"
   },
   "scripts": {
-    "start": "node replace-placeholders.js && react-scripts start",
+    "start": "react-scripts start",
     "build": "node replace-placeholders.js && react-scripts build",
     "test": "jest",
     "eject": "react-scripts eject"

@@ -22,13 +22,13 @@ def cache_organizations(organizations):
     current_time = int(time.time())
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    
+
     c.execute(f'PRAGMA table_info({ORGANIZATIONS_TABLE})')
     columns = [column[1] for column in c.fetchall()]
-    
+
     placeholders = ', '.join(['?' for _ in columns])
     sql = f'INSERT OR REPLACE INTO {ORGANIZATIONS_TABLE} ({", ".join(columns)}) VALUES ({placeholders})'
-    
+
     data = []
     for org in organizations:
         row = [
@@ -42,7 +42,7 @@ def cache_organizations(organizations):
             current_time  # last_updated
         ]
         data.append(tuple(row))
-    
+
     c.executemany(sql, data)
     conn.commit()
     conn.close()
@@ -59,7 +59,7 @@ def cache_repositories(org, repositories):
 def get_cached_organizations():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute(f'SELECT * FROM {ORGANIZATIONS_TABLE} ORDER BY name ASC')
+    c.execute(f'SELECT * FROM {ORGANIZATIONS_TABLE} ORDER BY login ASC')
     columns = [column[0] for column in c.description]
     orgs = []
     for row in c.fetchall():
@@ -73,7 +73,7 @@ def get_cached_organizations():
 def get_cached_repositories(org):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute(f'SELECT * FROM {REPOSITORIES_TABLE} WHERE org = ?', (org,))
+    c.execute(f'SELECT * FROM {REPOSITORIES_TABLE} WHERE org = ? ORDER BY name ASC', (org,))
     repos = [{'id': row[0], 'name': row[1], 'org': row[2], 'html_url': row[3], 'description': row[4], 'last_updated': row[5]} for row in c.fetchall()]
     conn.close()
     return repos

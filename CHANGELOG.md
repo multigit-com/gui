@@ -9,22 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Automatic refresh of repository list after removing a repository
+- Entrypoint scripts for API and backend services to copy .env file on container start
+- Volume mounts in docker-compose.yml to make .env file available to containers
 
 ### Changed
-- Removed 'original_name' and 'custom_name' columns from the organizations table in the database
-- Updated organization listing and caching functions to reflect the removed columns
-- Modified database schema for organizations table
-
-### Added
-- Sorting functionality for organizations by name in the database query
+- Updated Dockerfiles to use specific Alpine-based images for smaller size and faster builds
+- Added retry mechanism in docker-compose.yml for improved reliability during builds
+- Improved error handling in Dockerfiles for network-related issues
 
 ### Fixed
-- Issues with multiple API requests for the same data
-- Improved handling of GitHub API rate limits
-- Resolved issue with database column mismatch in organization caching
-- Updated database schema to match current organization data structure
+- Frontend now uses the correct hostname and port as specified in the .env file
 
+## [0.10.0] - 2024-10-27
+
+### Added
+- Centralized .env file loading from the root directory
+- New environment variables for API request settings (MAX_RETRIES, INITIAL_DELAY)
+- Improved error handling and logging in backend scripts
+- Enhanced caching mechanism with configurable duration
+
+### Changed
+- Updated Docker and Docker Compose configurations to use centralized .env file
+- Refactored backend code to use environment variables for API request settings
+- Modified frontend to remove direct dotenv usage
+- Updated testing procedures and documentation in TEST.md
+
+### Fixed
+- Issues with Docker builds related to environment variable loading
+- Frontend compilation errors related to dotenv usage
+- Improved reliability of GitHub API requests with retry mechanism
 
 ## [0.9.0] - 2024-10-26
 
